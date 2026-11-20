@@ -163,6 +163,36 @@ mutate "import: acepta ref repetido" 1700_import_activities.sql \
 mutate "import: acepta duración decimal" 1700_import_activities.sql \
   "(v_row ->> 'duration') !~ '^[0-9]{1,5}\$'" "false"
 
+mutate "wbs: sin comprobar scope.edit" 1800_wbs_deliverables.sql \
+  "if not private.can_read_project(p_project) or not private.has_project_permission(p_project, 'scope.edit') then" "if not private.can_read_project(p_project) then"
+mutate "wbs: permite mover bajo un descendiente" 1800_wbs_deliverables.sql \
+  "if p_parent = p_node or exists (" "if false and exists ("
+mutate "wbs: permite borrar nodos con hijos" 1800_wbs_deliverables.sql \
+  "if exists (select 1 from public.wbs_nodes where parent_id = p_node) then" "if false then"
+mutate "wbs: sin límite de profundidad" 1800_wbs_deliverables.sql \
+  "if v_depth > 10 then" "if v_depth > 1000 then"
+mutate "wbs: FK de padre en cascada (borra subárboles)" 1800_wbs_deliverables.sql \
+  "on delete restrict" "on delete cascade"
+mutate "wbs: el código se puede editar a mano" 1800_wbs_deliverables.sql \
+  "grant update (name, description) on public.wbs_nodes" "grant update (name, description, code) on public.wbs_nodes"
+mutate "wbs: se edita en proyecto cerrado" 1800_wbs_deliverables.sql \
+  "create function private.wbs_direct_guard() returns trigger
+language plpgsql security definer set search_path = ''
+as \$\$
+begin
+  perform private.assert_project_writable(coalesce(new.project_id, old.project_id));" "create function private.wbs_direct_guard() returns trigger
+language plpgsql security definer set search_path = ''
+as \$\$
+begin
+  null;"
+mutate "entregables: cualquiera con scope.edit cambia la revisión" 1800_wbs_deliverables.sql \
+  "      if new.review_status <> old.review_status
+         and not private.has_project_permission(new.project_id, 'scope.review') then" "      if false then"
+mutate "entregables: se crea ya aceptado sin scope.review" 1800_wbs_deliverables.sql \
+  "if tg_op = 'INSERT' and tg_table_name = 'deliverables' and new.review_status <> 'pending'" "if false and new.review_status <> 'pending'"
+mutate "wbs: recodificación sin reordenar hermanos" 1800_wbs_deliverables.sql \
+  "update public.wbs_nodes set position = position * 2 where project_id = p_project and parent_id is not distinct from p_parent;" "null;"
+
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

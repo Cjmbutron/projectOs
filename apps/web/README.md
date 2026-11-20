@@ -6,3 +6,6 @@ Lógica testeable en `lib/` (login con bloqueo, registro, recálculo, CSRF, redi
 ## Importación CSV (US-071)
 Columnas: `id`, `nombre`, `duracion` (días hábiles, entero), `predecesoras` (opcional). Delimitador `,` o `;` (autodetectado), UTF-8 con o sin BOM.
 Predecesoras: `1|3SS+2|4FF-1` → tipo opcional (FS por defecto) y desfase opcional. Máximo 1000 filas y 1 MB. Los errores se informan con su número de línea; la base de datos importa todo o nada.
+
+## WBS y entregables
+`/projects/:id/wbs`: árbol con código automático (subir, bajar, sangrar, quitar sangría, renombrar, borrar) y entregables con estados de elaboración y revisión independientes.

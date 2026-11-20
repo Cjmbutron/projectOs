@@ -38,11 +38,11 @@ Requiere PostgreSQL 15+ (por `security_invoker` en vistas) con permiso para crea
 
 ```bash
 db/tests/run.sh              # aplica migraciones sobre una BD vacía y ejecuta toda la batería
-db/tests/mutation_check.sh   # introduce 46 defectos deliberados; todos deben ser detectados
+db/tests/mutation_check.sh   # introduce 56 defectos deliberados; todos deben ser detectados
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **781 pruebas, 0 fallos; 46/46 mutaciones detectadas.**
+Estado actual: **851 pruebas, 0 fallos; 56/56 mutaciones detectadas.**
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -53,7 +53,7 @@ Estado actual: **781 pruebas, 0 fallos; 46/46 mutaciones detectadas.**
 - La salud del proyecto (`health`) **no** se calcula todavía: falta definir umbrales (pendiente de decisión). El progreso sí (promedio de % ponderado por duración).
 - Si se quita a una persona del proyecto o se suspende, sus actividades conservan el `assignee_id` (no se reasignan solas).
 - La guardia de ciclos es recursiva por inserción: con importaciones de miles de dependencias conviene medir (el motor igualmente valida el lote antes).
-- Falta la importación CSV de actividades (US-071) y la jerarquía WBS/trazabilidad: van en R3.
+- Pendiente: vincular requisitos con entregables y actividades con nodos de la WBS (trazabilidad), recursos (R3).
 
 ## Decisiones tomadas al construir R1 y R2 (a incorporar en POS-001 v1.3)
 
@@ -74,3 +74,8 @@ Estado actual: **781 pruebas, 0 fallos; 46/46 mutaciones detectadas.**
 
 ### 1700 · Importación de actividades (US-071)
 `import_activities(project, rows jsonb)`: **SECURITY INVOKER** (cada insert pasa por RLS y concesiones de la persona; la comprobación `can_edit_schedule` añade MFA y proyecto abierto). Atómica: un error en cualquier fila no deja nada. Límite 1000 filas; valida referencias, tipos, desfases y ciclos.
+
+### 1800 · WBS y entregables (US-016, US-017)
+- `wbs_nodes`: código jerárquico automático (1, 1.1, 1.1.2) y posición mantenidos por el sistema; solo `name`/`description` se editan directamente. `wbs_add_node`, `wbs_move_node`, `wbs_delete_node` recodifican y validan (sin ciclos, sin borrar nodos con hijos, máximo 10 niveles y 5000 nodos).
+- Contrato de `wbs_move_node(nodo, padre, posición)`: inserta **antes** del hermano que hoy ocupa esa posición; `null`/`< 1` = al final. La interfaz lo usa así (bajar = i+3, subir = i, desangrar = posición del padre + 1).
+- `deliverables`: estados independientes de elaboración y revisión. Cambiar la revisión exige `scope.review` (solo PM); `scope.edit` (PM y team_lead) elabora.
