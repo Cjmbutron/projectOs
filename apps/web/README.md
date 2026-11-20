@@ -2,3 +2,7 @@
 Variables: ver `.env.example` (`SUPABASE_SERVICE_ROLE_KEY` solo en servidor).
 `npm run dev -w @project-os/web` · `npm test -w @project-os/web` · `npm run build -w @project-os/web`
 Lógica testeable en `lib/` (login con bloqueo, registro, recálculo, CSRF, redirección segura); las rutas en `app/api` solo conectan dependencias.
+
+## Importación CSV (US-071)
+Columnas: `id`, `nombre`, `duracion` (días hábiles, entero), `predecesoras` (opcional). Delimitador `,` o `;` (autodetectado), UTF-8 con o sin BOM.
+Predecesoras: `1|3SS+2|4FF-1` → tipo opcional (FS por defecto) y desfase opcional. Máximo 1000 filas y 1 MB. Los errores se informan con su número de línea; la base de datos importa todo o nada.

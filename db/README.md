@@ -38,11 +38,11 @@ Requiere PostgreSQL 15+ (por `security_invoker` en vistas) con permiso para crea
 
 ```bash
 db/tests/run.sh              # aplica migraciones sobre una BD vacía y ejecuta toda la batería
-db/tests/mutation_check.sh   # introduce 40 defectos deliberados; todos deben ser detectados
+db/tests/mutation_check.sh   # introduce 46 defectos deliberados; todos deben ser detectados
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **748 pruebas, 0 fallos; 40/40 mutaciones detectadas.**
+Estado actual: **781 pruebas, 0 fallos; 46/46 mutaciones detectadas.**
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -71,3 +71,6 @@ Estado actual: **748 pruebas, 0 fallos; 40/40 mutaciones detectadas.**
 ### 1600 · Lectura para el servidor y autorización de la ruta de recálculo
 - `get_schedule_snapshot(project)` (solo `service_role`): entrada completa del motor en un JSON.
 - `can_edit_schedule(project)` (usuarios autenticados): la ruta `/api/projects/:id/recalculate` la llama **con la sesión de la persona**, de modo que membresía, permiso `schedule.edit`, proyecto abierto y la obligación de MFA las decide la base de datos, no la aplicación.
+
+### 1700 · Importación de actividades (US-071)
+`import_activities(project, rows jsonb)`: **SECURITY INVOKER** (cada insert pasa por RLS y concesiones de la persona; la comprobación `can_edit_schedule` añade MFA y proyecto abierto). Atómica: un error en cualquier fila no deja nada. Límite 1000 filas; valida referencias, tipos, desfases y ciclos.

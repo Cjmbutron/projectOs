@@ -150,6 +150,19 @@ mutate "guardia de ciclos con privilegios elevados (filtra el grafo)" 1200_sched
 language plpgsql set search_path = ''" "create function private.dependencies_cycle_guard() returns trigger
 language plpgsql security definer set search_path = ''"
 
+mutate "import: función con privilegios elevados (salta RLS)" 1700_import_activities.sql \
+  "language plpgsql security invoker set search_path = ''" "language plpgsql security definer set search_path = ''"
+mutate "import: sin comprobar permiso de edición" 1700_import_activities.sql \
+  "if not public.can_edit_schedule(p_project) then" "if false then"
+mutate "import: sin límite de filas" 1700_import_activities.sql \
+  "jsonb_array_length(p_rows) > 1000" "jsonb_array_length(p_rows) > 100000"
+mutate "import: permite autodependencia" 1700_import_activities.sql \
+  "if v_pref = v_ref then" "if false then"
+mutate "import: acepta ref repetido" 1700_import_activities.sql \
+  "if v_ids ? v_ref then" "if false then"
+mutate "import: acepta duración decimal" 1700_import_activities.sql \
+  "(v_row ->> 'duration') !~ '^[0-9]{1,5}\$'" "false"
+
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

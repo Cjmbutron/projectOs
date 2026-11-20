@@ -8,6 +8,7 @@ const MESSAGES: Record<string, string> = {
   schedule_conflict: 'Alguien más cambió el cronograma. Intenta de nuevo.',
   start_date_required: 'Define la fecha de inicio del proyecto antes de calcular.',
   dependency_cycle: 'Esa dependencia crearía un ciclo en el cronograma.',
+  invalid_file: 'El archivo tiene errores. Corrígelo e inténtalo de nuevo.',
   invalid_credentials: 'Correo o contraseña incorrectos.',
   account_locked: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
   email_not_confirmed: 'Confirma tu correo con el enlace que te enviamos.',

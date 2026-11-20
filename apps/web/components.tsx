@@ -68,3 +68,35 @@ export function LogoutButton() {
   const router = useRouter();
   return <button className="secondary" style={{marginTop:0}} onClick={async () => { await post('/api/auth/logout'); router.replace('/login'); router.refresh(); }}>Salir</button>;
 }
+
+export function ImportCsv({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<{ line: number; message: string }[]>([]);
+  const [msg, setMsg] = useState('');
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErrors([]); setMsg('');
+    if (file.size > 1_000_000) return setErrors([{ line: 0, message: 'El archivo supera 1 MB.' }]);
+    setBusy(true);
+    const { ok, data } = await post(`/api/projects/${projectId}/import`, { csv: await file.text() });
+    setBusy(false);
+    if (ok) { setMsg(`Importadas ${String(data.activities)} actividades y ${String(data.dependencies)} dependencias. Recalcula el cronograma.`); router.refresh(); return; }
+    if (Array.isArray(data.errors)) return setErrors(data.errors as { line: number; message: string }[]);
+    setErrors([{ line: 0, message: messageFor(data.error as string) }]);
+  }
+  return (
+    <div>
+      <label htmlFor="csv">Importar actividades (CSV: id, nombre, duracion, predecesoras)</label>
+      <input id="csv" type="file" accept=".csv,text/csv" onChange={onFile} disabled={busy} />
+      {msg && <p className="okmsg" role="status">{msg}</p>}
+      {errors.length > 0 && (
+        <ul className="err" role="alert">
+          {errors.map((er, i) => <li key={i}>{er.line ? `Línea ${er.line}: ` : ''}{er.message}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}

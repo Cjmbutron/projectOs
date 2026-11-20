@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { RecalcButton } from '@/components';
+import { ImportCsv, RecalcButton } from '@/components';
 import { messageFor } from '@/lib/errors';
 import { UUID_RE } from '@/lib/http';
 import { createClient } from '@/lib/supabase/server';
@@ -63,6 +63,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           ))}</tbody></table>
         {(acts ?? []).length === 0 && <p>Sin actividades.</p>}
       </div>
+      <div className="card"><ImportCsv projectId={id} /></div>
       <form action={addActivity} className="card">
         <h2>Nueva actividad</h2>
         <input type="hidden" name="project" value={id} />
