@@ -49,3 +49,8 @@ POS-001 v1.2 §2 declara como "hecho y probado" el esquema `db/` (128 pruebas de
 
 Las cifras de POS-001 que dependían de ese material (128 pruebas de RLS; 5 000 actividades en ~170 ms) deben
 leerse como **metas**, no como resultados. La medición real del motor está en el README del paquete.
+
+## Aplicación web (`apps/web`)
+Next.js 16 + Supabase. Pantallas: login/registro (bloqueo por cuenta), organización, proyectos, actividades con fechas calculadas y botón «Recalcular».
+Configuración: copiar `apps/web/.env.example` a `.env.local` con las claves de un proyecto Supabase tras aplicar `db/migrations/` en orden.
+Estado honesto: compila, tipa y pasa 24 pruebas de la lógica de rutas; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**

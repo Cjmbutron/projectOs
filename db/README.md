@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 40 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **732 pruebas, 0 fallos; 40/40 mutaciones detectadas.**
+Estado actual: **748 pruebas, 0 fallos; 40/40 mutaciones detectadas.**
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -67,3 +67,7 @@ Estado actual: **732 pruebas, 0 fallos; 40/40 mutaciones detectadas.**
 - (R2) Las fechas calculadas solo las escribe `apply_schedule`; cada cambio de entradas sube `schedule_version` y un cálculo con versión vieja falla con `schedule_conflict` (SQLSTATE 40001).
 - (R2) Una línea base solo se crea con el cronograma al día (`schedule_not_current` si no) y es inmutable; sobrevive al borrado de actividades y se elimina solo con la purga del proyecto.
 - (R2) Un proyecto en la papelera oculta también sus fases, miembros, actividades y cronograma a quien no pueda restaurarlo.
+
+### 1600 · Lectura para el servidor y autorización de la ruta de recálculo
+- `get_schedule_snapshot(project)` (solo `service_role`): entrada completa del motor en un JSON.
+- `can_edit_schedule(project)` (usuarios autenticados): la ruta `/api/projects/:id/recalculate` la llama **con la sesión de la persona**, de modo que membresía, permiso `schedule.edit`, proyecto abierto y la obligación de MFA las decide la base de datos, no la aplicación.

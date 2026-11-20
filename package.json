@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "description": "Project OS — plataforma de gestión de proyectos (POS-001)",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "engines": {
     "node": ">=22.12"

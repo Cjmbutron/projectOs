@@ -43,6 +43,34 @@ begin
   perform t.throws('actor nulo', format('select public.apply_schedule(%L,%L,null,t.fake_results(%L),t.fake_summary())', v_p, v_ver, v_p), 'forbidden');
   perform t.throws('proyecto inexistente', format('select public.apply_schedule(%L,0,%L,''[]'',t.fake_summary())', gen_random_uuid(), t.uid('pm_a')), 'project_not_found');
 
+  -- ---- Instantánea de lectura (solo servidor) ----
+  perform t.as_user('pm_a');
+  perform t.throws('authenticated no lee la instantánea', format('select public.get_schedule_snapshot(%L)', v_p), '42501');
+  perform t.as_anon();
+  perform t.throws('anon no lee la instantánea', format('select public.get_schedule_snapshot(%L)', v_p), '42501');
+  perform t.as_service();
+  perform t.eq('la instantánea trae versión, 3 actividades y 2 dependencias',
+    (select (x ->> 'version')::int || '/' || jsonb_array_length(x -> 'activities') || '/' || jsonb_array_length(x -> 'dependencies')
+       from (select public.get_schedule_snapshot(v_p) x) q), v_ver || '/3/2');
+  perform t.ok('proyecto inexistente → NULL', public.get_schedule_snapshot(gen_random_uuid()) is null);
+  perform t.reset();
+
+  -- ---- can_edit_schedule (la usa la ruta del servidor con la sesión de la persona) ----
+  perform t.as_user('pm_a');
+  perform t.eq('PM puede editar el cronograma', public.can_edit_schedule(v_p), true);
+  perform t.as_user('admin_a');
+  perform t.eq('admin puede', public.can_edit_schedule(v_p), true);
+  perform t.as_user('member_a');
+  perform t.eq('contributor no puede', public.can_edit_schedule(v_p), false);
+  perform t.as_user('ext_a');
+  perform t.eq('externo no puede', public.can_edit_schedule(v_p), false);
+  perform t.as_user('owner_b');
+  perform t.eq('otra organización: false (no revela si existe)', public.can_edit_schedule(v_p), false);
+  perform t.eq('proyecto inexistente: false', public.can_edit_schedule(gen_random_uuid()), false);
+  perform t.as_anon();
+  perform t.throws('anon no puede llamarla', format('select public.can_edit_schedule(%L)', v_p), '42501');
+  perform t.as_service();
+
   -- ---- Resultados inválidos: se rechazan sin dejar nada escrito ----
   perform t.throws('faltan actividades', format('select public.apply_schedule(%L,%L,%L,t.fake_results(%L,%L),t.fake_summary())', v_p, v_ver, t.uid('pm_a'), v_p, v_c), 'results_mismatch');
   perform t.throws('resultados no es un arreglo', format('select public.apply_schedule(%L,%L,%L,''{}''::jsonb,t.fake_summary())', v_p, v_ver, t.uid('pm_a')), 'invalid_results');

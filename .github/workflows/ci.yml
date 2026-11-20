@@ -17,6 +17,12 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run typecheck -w @project-os/web
+      - run: npm run build -w @project-os/web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy
+          SUPABASE_SERVICE_ROLE_KEY: dummy
 
   db:
     runs-on: ubuntu-latest

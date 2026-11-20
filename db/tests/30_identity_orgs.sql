@@ -99,3 +99,22 @@ begin
   perform t.ok('sin MFA exigido, aal1 basta', t.count_of('select 1 from public.organization_members where organization_id = ''' || v_c || '''') >= 3);
   perform t.reset();
 end $$;
+
+-- can_edit_schedule respeta el MFA exigido por la organización
+do $$
+declare
+  v_c uuid; v_p uuid;
+begin
+  perform t.as_user('owner_a', 'aal2');
+  v_c := public.create_organization('MfaSched', 'USD');
+  v_p := public.create_project(v_c, 'MS-1', 'Proyecto con MFA', t.uid('owner_a'), 'predictive');
+  perform t.as_user('owner_a', 'aal1');
+  perform t.eq('sin MFA exigido, aal1 puede editar', public.can_edit_schedule(v_p), true);
+  perform t.as_user('owner_a', 'aal2');
+  update public.organizations set mfa_required = true where id = v_c;
+  perform t.as_user('owner_a', 'aal1');
+  perform t.eq('con MFA exigido y sesión aal1: no puede editar', public.can_edit_schedule(v_p), false);
+  perform t.as_user('owner_a', 'aal2');
+  perform t.eq('con aal2: sí puede', public.can_edit_schedule(v_p), true);
+  perform t.reset();
+end $$;

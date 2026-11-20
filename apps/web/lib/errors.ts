@@ -1,0 +1,23 @@
+/** Códigos estables de la base de datos y de la API → mensajes para la persona usuaria. */
+const MESSAGES: Record<string, string> = {
+  forbidden: 'No tienes permiso para hacer esto.',
+  not_authenticated: 'Tu sesión expiró. Vuelve a iniciar sesión.',
+  email_not_verified: 'Verifica tu correo antes de continuar.',
+  project_read_only: 'El proyecto está cerrado o cancelado: solo lectura.',
+  project_not_found: 'No encontramos ese proyecto.',
+  schedule_conflict: 'Alguien más cambió el cronograma. Intenta de nuevo.',
+  start_date_required: 'Define la fecha de inicio del proyecto antes de calcular.',
+  dependency_cycle: 'Esa dependencia crearía un ciclo en el cronograma.',
+  invalid_credentials: 'Correo o contraseña incorrectos.',
+  account_locked: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
+  email_not_confirmed: 'Confirma tu correo con el enlace que te enviamos.',
+  weak_password: 'La contraseña debe tener al menos 12 caracteres.',
+  invalid_email: 'Revisa el correo.',
+  invalid_name: 'Escribe tu nombre.',
+  terms_required: 'Debes aceptar los términos y la política de privacidad.',
+  service_unavailable: 'Servicio no disponible por ahora. Intenta en unos minutos.',
+};
+
+export function messageFor(code: string | null | undefined): string {
+  return (code && MESSAGES[code]) || 'Ocurrió un error. Intenta de nuevo.';
+}
