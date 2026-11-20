@@ -12,3 +12,6 @@ Predecesoras: `1|3SS+2|4FF-1` → tipo opcional (FS por defecto) y desfase opcio
 
 ## Requisitos y trazabilidad
 `/projects/:id/requirements`: requisitos con código automático, estado, vínculos con entregables y cobertura (entregables, aceptados, actividades). Las actividades se vinculan a un nodo de la WBS desde la pantalla del proyecto.
+
+## Gantt (US-021, solo lectura)
+`/projects/:id/gantt`: SVG propio con barras, hitos, dependencias FS/SS/FF/SF y ruta crítica; tabla equivalente debajo. Falta edición por arrastre y virtualización (ver ADR-007, actualización).

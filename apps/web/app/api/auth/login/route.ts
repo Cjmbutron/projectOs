@@ -12,10 +12,28 @@ export async function POST(request: Request) {
   const result = await handleLogin(
     {
       lockUntil: async (email) => {
-        const { data, error } = await admin.rpc('login_lock_until', { p_email: email });
-        if (error) throw new Error(error.code);
-        return asDate(data);
+        const { data, error } = await admin.rpc('login_lock_until', {
+  p_email: email,
+});
+
+if (error) {
+  console.error('[LOGIN_LOCK_UNTIL_ERROR]', {
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  });
+
+  throw new Error(error.code);
+}
+
+console.log('[LOGIN_LOCK_UNTIL_SUCCESS]', { data });
+
+return asDate(data);
       },
+
+
+      
       record: async (email, ok) => {
         const { data, error } = await admin.rpc('record_login_attempt', { p_email: email, p_succeeded: ok });
         if (error) throw new Error(error.code);

@@ -30,3 +30,17 @@ Gantt propio sobre SVG/canvas), usando como datos el generador de redes de
 7. **Mantenimiento:** actividad del proyecto, versión de React soportada, tamaño del bundle.
 
 **Salida:** una tabla comparativa y una recomendación con los riesgos residuales, para decidir en una reunión.
+
+## Actualización (20-nov-2026): primera versión propia, solo lectura
+
+Mientras el spike no se haga, se construyó un **Gantt propio de solo lectura** (SVG generado en el servidor, sin
+dependencias externas, por lo que no hay licencia que verificar) en `apps/web/lib/gantt/layout.ts` (geometría pura,
+probada) y `apps/web/components/GanttChart.tsx`. Cubre del criterio 3: barras, hitos, los cuatro tipos de
+dependencia con ruta ortogonal y resalte de ruta crítica; del criterio 6: no calcula fechas, solo dibuja las del
+motor; del criterio 5: `role="img"` con descripción, `<title>` por barra y una tabla equivalente debajo.
+
+**Medido:** la geometría de 5 000 actividades y 4 999 dependencias se calcula en ≈ 17 ms (Node, no navegador).
+**No medido:** el rendimiento del DOM en navegador (≈ 20 000 nodos SVG con 5 000 actividades; probablemente haga
+falta virtualización de filas), la edición por arrastre (criterio 2), la accesibilidad completa por teclado y el
+uso táctil. El spike sigue pendiente para decidir si la edición se construye sobre este Gantt o con un componente
+externo; esta versión no cierra la decisión.
