@@ -17,6 +17,7 @@ async function addActivity(formData: FormData) {
     project_id: project,
     name: String(formData.get('name') ?? '').trim(),
     duration: Math.max(0, Math.min(36500, Number(formData.get('duration') ?? 1) || 0)),
+    wbs_node_id: UUID_RE.test(String(formData.get('node') ?? '')) ? String(formData.get('node')) : null,
   });
   redirect(`/projects/${project}${error ? `?error=${encodeURIComponent(error.code ?? 'forbidden')}` : ''}`);
 }
@@ -65,18 +66,20 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const supabase = await createClient();
   const { data: project } = await supabase.from('projects').select('id,code,name,status').eq('id', id).maybeSingle();
   if (!project) notFound();
-  const [{ data: sched }, { data: acts }, { data: deps }] = await Promise.all([
+  const [{ data: sched }, { data: acts }, { data: deps }, { data: nodes }] = await Promise.all([
     supabase.from('project_schedules').select('start_date,schedule_version,computed_version,computed_start,computed_finish').eq('project_id', id).maybeSingle(),
-    supabase.from('activities').select('id,name,duration,early_start,early_finish,total_float,is_critical').eq('project_id', id).order('sort_order').order('created_at'),
+    supabase.from('activities').select('id,name,duration,early_start,early_finish,total_float,is_critical,wbs_node_id').eq('project_id', id).order('sort_order').order('created_at'),
     supabase.from('activity_dependencies').select('id,predecessor_id,successor_id,type,lag').eq('project_id', id).order('created_at'),
+    supabase.from('wbs_nodes').select('id,code,name').eq('project_id', id),
   ]);
+  const nodeCode = new Map((nodes ?? []).map((n) => [n.id, n.code]));
   const nameOf = new Map((acts ?? []).map((a) => [a.id, a.name]));
   const stale = sched && sched.computed_version !== sched.schedule_version;
   return (
     <main>
       <p><Link href="/projects">← Proyectos</Link></p>
       <h1>{project.code} · {project.name}</h1>
-      <p><Link href={`/projects/${id}/wbs`}>WBS y entregables →</Link></p>
+      <p><Link href={`/projects/${id}/wbs`}>WBS y entregables →</Link> · <Link href={`/projects/${id}/requirements`}>Requisitos y trazabilidad →</Link></p>
       {sp.error && <p className="err" role="alert">{messageFor(sp.error === '42501' ? 'forbidden' : sp.error)}</p>}
       <div className="card">
         <form action={setStart} className="row">
@@ -88,10 +91,10 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         <RecalcButton projectId={id} />
       </div>
       <div className="card">
-        <table><thead><tr><th>Actividad</th><th>Días</th><th>Inicio</th><th>Fin</th><th>Holgura</th></tr></thead>
+        <table><thead><tr><th>Actividad</th><th>Días</th><th>Inicio</th><th>Fin</th><th>Holgura</th><th>WBS</th></tr></thead>
           <tbody>{(acts ?? []).map((a) => (
             <tr key={a.id}><td className={a.is_critical ? 'crit' : undefined}>{a.name}</td><td>{a.duration}</td>
-              <td>{a.early_start ?? '—'}</td><td>{a.early_finish ?? '—'}</td><td>{a.total_float ?? '—'}</td></tr>
+              <td>{a.early_start ?? '—'}</td><td>{a.early_finish ?? '—'}</td><td>{a.total_float ?? '—'}</td><td>{a.wbs_node_id ? nodeCode.get(a.wbs_node_id) : '—'}</td></tr>
           ))}</tbody></table>
         {(acts ?? []).length === 0 && <p>Sin actividades.</p>}
       </div>
@@ -126,6 +129,9 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         <input type="hidden" name="project" value={id} />
         <label htmlFor="name">Nombre</label><input id="name" name="name" required maxLength={200} />
         <label htmlFor="duration">Duración (días hábiles)</label><input id="duration" name="duration" type="number" min={0} max={36500} defaultValue={1} />
+        <label htmlFor="node">Nodo de la WBS (opcional)</label>
+        <select id="node" name="node" defaultValue=""><option value="">(ninguno)</option>
+          {[...(nodes ?? [])].sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })).map((n) => <option key={n.id} value={n.id}>{n.code} {n.name}</option>)}</select>
         <button>Agregar</button>
       </form>
     </main>

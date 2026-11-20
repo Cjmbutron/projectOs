@@ -53,9 +53,10 @@ export function outdentTarget(nodes: WbsNode[], id: string): MoveTarget | null {
 export function scopeErrorCode(error: { message?: string; code?: string } | null | undefined): string {
   if (!error) return '';
   const first = (error.message ?? '').split('\n')[0].trim();
-  const known = ['wbs_has_children', 'wbs_cycle', 'wbs_too_deep', 'wbs_too_large', 'wbs_node_not_found', 'project_read_only', 'forbidden'];
+  const known = ['wbs_has_children', 'wbs_cycle', 'wbs_too_deep', 'wbs_too_large', 'wbs_node_not_found', 'project_read_only', 'forbidden', 'requirement_needs_deliverable'];
   if (known.includes(first)) return first;
   if (error.code === '42501') return 'forbidden';
   if (error.code === '23514') return 'invalid_value';
+  if (error.code === '23505') return 'duplicate_link';
   return 'unknown';
 }

@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   wbs_too_large: 'La WBS admite como máximo 5000 nodos.',
   wbs_node_not_found: 'No encontramos ese nodo.',
   invalid_value: 'Revisa los datos: algún valor no es válido.',
+  requirement_needs_deliverable: 'Un requisito aprobado debe estar vinculado al menos a un entregable.',
+  duplicate_link: 'Ese vínculo ya existe.',
   invalid_credentials: 'Correo o contraseña incorrectos.',
   account_locked: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
   email_not_confirmed: 'Confirma tu correo con el enlace que te enviamos.',

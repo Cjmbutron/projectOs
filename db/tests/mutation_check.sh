@@ -193,6 +193,40 @@ mutate "entregables: se crea ya aceptado sin scope.review" 1800_wbs_deliverables
 mutate "wbs: recodificación sin reordenar hermanos" 1800_wbs_deliverables.sql \
   "update public.wbs_nodes set position = position * 2 where project_id = p_project and parent_id is not distinct from p_parent;" "null;"
 
+mutate "requisitos: se aprueban sin entregable" 1900_requirements_traceability.sql \
+  "r.id = v_id and r.status in ('approved', 'implemented', 'verified')" "r.id = v_id and r.status in ('approved')"
+mutate "requisitos: quitar el último vínculo no se comprueba" 1900_requirements_traceability.sql \
+  "create constraint trigger requirement_links_coverage after delete on public.requirement_deliverables
+  deferrable initially immediate for each row execute function private.requirement_coverage_check();" "select 1;"
+mutate "requisitos: el código se repite (sin cerrojo ni máximo)" 1900_requirements_traceability.sql \
+  "select coalesce(max(seq), 0) + 1 into new.seq from public.requirements where project_id = new.project_id;" "new.seq := 1;"
+mutate "requisitos: seq editable" 1900_requirements_traceability.sql \
+  "       or new.seq <> old.seq then" "       or false then"
+mutate "requisitos: lectura abierta a cualquiera" 1900_requirements_traceability.sql \
+  "create policy requirements_read on public.requirements for select to authenticated
+  using (private.can_read_project(project_id));" "create policy requirements_read on public.requirements for select to authenticated
+  using (true);"
+mutate "requisitos: se escriben sin scope.edit" 1900_requirements_traceability.sql \
+  "create policy requirements_insert on public.requirements for insert to authenticated
+  with check (private.has_project_permission(project_id, 'scope.edit'));" "create policy requirements_insert on public.requirements for insert to authenticated
+  with check (true);"
+mutate "trazabilidad: la vista salta RLS" 1900_requirements_traceability.sql \
+  "create view public.requirement_traceability
+with (security_invoker = true) as" "create view public.requirement_traceability
+with (security_invoker = false) as"
+mutate "trazabilidad: cuenta entregables no aceptados como aceptados" 1900_requirements_traceability.sql \
+  "where l.requirement_id = r.id and d.review_status = 'accepted')" "where l.requirement_id = r.id)"
+mutate "requisitos: se editan en proyecto cerrado" 1900_requirements_traceability.sql \
+  "create function private.requirement_before() returns trigger
+language plpgsql security definer set search_path = ''
+as \$\$
+begin
+  perform private.assert_project_writable(coalesce(new.project_id, old.project_id));" "create function private.requirement_before() returns trigger
+language plpgsql security definer set search_path = ''
+as \$\$
+begin
+  null;"
+
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

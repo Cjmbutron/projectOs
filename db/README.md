@@ -38,11 +38,11 @@ Requiere PostgreSQL 15+ (por `security_invoker` en vistas) con permiso para crea
 
 ```bash
 db/tests/run.sh              # aplica migraciones sobre una BD vacía y ejecuta toda la batería
-db/tests/mutation_check.sh   # introduce 56 defectos deliberados; todos deben ser detectados
+db/tests/mutation_check.sh   # introduce 65 defectos deliberados; todos deben ser detectados
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **851 pruebas, 0 fallos; 56/56 mutaciones detectadas.**
+Estado actual: **912 pruebas, 0 fallos; 65/65 mutaciones detectadas.**
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -79,3 +79,10 @@ Estado actual: **851 pruebas, 0 fallos; 56/56 mutaciones detectadas.**
 - `wbs_nodes`: código jerárquico automático (1, 1.1, 1.1.2) y posición mantenidos por el sistema; solo `name`/`description` se editan directamente. `wbs_add_node`, `wbs_move_node`, `wbs_delete_node` recodifican y validan (sin ciclos, sin borrar nodos con hijos, máximo 10 niveles y 5000 nodos).
 - Contrato de `wbs_move_node(nodo, padre, posición)`: inserta **antes** del hermano que hoy ocupa esa posición; `null`/`< 1` = al final. La interfaz lo usa así (bajar = i+3, subir = i, desangrar = posición del padre + 1).
 - `deliverables`: estados independientes de elaboración y revisión. Cambiar la revisión exige `scope.review` (solo PM); `scope.edit` (PM y team_lead) elabora.
+
+### 1900 · Requisitos y trazabilidad (US-015)
+- `requirements`: código `REQ-001` automático por proyecto (con cerrojo), descripción, origen y estado. Un requisito `approved`/`implemented`/`verified` debe tener ≥ 1 entregable; se comprueba al final de cada sentencia (tampoco se puede quitar su último vínculo ni borrar el único entregable que lo cubre).
+- `requirement_deliverables`: vínculo requisito ↔ entregable del mismo proyecto.
+- `activities.wbs_node_id`: vincula una actividad con un nodo de la WBS.
+- Vista `requirement_traceability` (security_invoker): entregables, entregables aceptados y actividades alcanzadas vía nodo de la WBS por requisito.
+- Escritura con `scope.edit` (PM y team_lead). Aprobar requisitos aún no exige una función aparte: si lo necesitas, se agrega `scope.review` como en los entregables.

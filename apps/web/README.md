@@ -9,3 +9,6 @@ Predecesoras: `1|3SS+2|4FF-1` → tipo opcional (FS por defecto) y desfase opcio
 
 ## WBS y entregables
 `/projects/:id/wbs`: árbol con código automático (subir, bajar, sangrar, quitar sangría, renombrar, borrar) y entregables con estados de elaboración y revisión independientes.
+
+## Requisitos y trazabilidad
+`/projects/:id/requirements`: requisitos con código automático, estado, vínculos con entregables y cobertura (entregables, aceptados, actividades). Las actividades se vinculan a un nodo de la WBS desde la pantalla del proyecto.

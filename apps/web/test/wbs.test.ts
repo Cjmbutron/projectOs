@@ -36,6 +36,8 @@ describe('scopeErrorCode', () => {
     expect(scopeErrorCode({ message: 'forbidden\nDETAIL' })).toBe('forbidden');
     expect(scopeErrorCode({ message: 'x', code: '42501' })).toBe('forbidden');
     expect(scopeErrorCode({ message: 'x', code: '23514' })).toBe('invalid_value');
+    expect(scopeErrorCode({ message: 'requirement_needs_deliverable' })).toBe('requirement_needs_deliverable');
+    expect(scopeErrorCode({ message: 'x', code: '23505' })).toBe('duplicate_link');
     expect(scopeErrorCode({ message: 'password=secreto' })).toBe('unknown');
     expect(scopeErrorCode(null)).toBe('');
   });
