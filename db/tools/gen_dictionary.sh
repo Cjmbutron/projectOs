@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# Genera docs/POS-002-R1-modelo-de-datos.md a partir del esquema REAL (migraciones aplicadas).
-# Uso: db/tools/gen_dictionary.sh > docs/POS-002-R1-modelo-de-datos.md
+# Genera docs/POS-002-modelo-de-datos.md a partir del esquema REAL (migraciones aplicadas).
+# Uso: db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md
 # Requiere una BD con las migraciones aplicadas (por defecto la que deja db/tests/run.sh: pos_test).
 set -euo pipefail
 DB="${POS_TEST_DB:-pos_test}"
 q() { psql -qXAt -d "$DB" -c "$1"; }
 
 cat <<'HDR'
-# POS-002 · Modelo de datos R1 (generado)
+# POS-002 · Modelo de datos R1 + R2 (generado)
 
 > Generado automáticamente desde las migraciones por `db/tools/gen_dictionary.sh`. **No editar a mano.**
-> Alcance R1: identidad, organizaciones, roles y permisos, portafolios/programas/proyectos/fases,
-> invitaciones, auditoría. Validado en PostgreSQL 16 con un reemplazo mínimo de Supabase (ver `db/README.md`).
+> Alcance: R1 (identidad, organizaciones, roles y permisos, portafolios/programas/proyectos/fases,
+> invitaciones, auditoría) y R2 (calendario, actividades, restricciones, dependencias, cálculo guardado,
+> avance y líneas base). Validado en PostgreSQL 16 con un reemplazo mínimo de Supabase (ver `db/README.md`).
 
 HDR
 

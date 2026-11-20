@@ -7,8 +7,11 @@ Plataforma de gestión de proyectos. Definición del producto: **POS-001 v1.2** 
 ```
 project-os/
 ├── docs/adr/                    Decisiones de arquitectura (ADR-001 a 007)
+├── docs/POS-002-modelo-de-datos.md      Modelo, permisos y políticas (generado)
+├── db/                          Migraciones SQL y pruebas de seguridad — ver db/README.md
 ├── packages/
-│   └── schedule-engine/         Motor de cronograma (TypeScript puro) — ver su README
+│   ├── schedule-engine/         Motor de cronograma (TypeScript puro) — ver su README
+│   └── schedule-service/        Lee entradas → motor → apply_schedule (con reintento por conflicto)
 ├── .github/workflows/ci.yml     Typecheck y pruebas en cada PR
 ├── tsconfig.base.json
 └── package.json                 npm workspaces
@@ -24,6 +27,11 @@ npm run typecheck
 npm test
 ```
 
+Base de datos (PostgreSQL 15+): `db/tests/run.sh` — ver `db/README.md`.
+
+Integración motor ↔ base de datos (tras `db/tests/run.sh`):
+`POS_DB_URL=postgresql://usuario@/pos_test?host=/var/run/postgresql npm test -w @project-os/schedule-service` (sin `POS_DB_URL` esas 8 pruebas se omiten).
+
 ## Estado real del Sprint 0
 
 POS-001 v1.2 §2 declara como "hecho y probado" el esquema `db/` (128 pruebas de aislamiento) y el motor
@@ -33,8 +41,9 @@ POS-001 v1.2 §2 declara como "hecho y probado" el esquema `db/` (128 pruebas de
 |---|---|
 | Estructura del repositorio, ADR y CI | Hecho (este directorio) |
 | Motor de cronograma | **Hecho y probado** (`packages/schedule-engine`, 88 pruebas) |
-| Esquema de base de datos R1, RLS, auditoría y pruebas de aislamiento | **Pendiente** (paso 3) |
-| Prueba contra un proyecto Supabase real | **Pendiente** |
+| Esquema de base de datos R1 + R2 (cronograma, líneas base), RLS, auditoría y pruebas de aislamiento | **Hecho y probado en PostgreSQL 16 con reemplazo de Supabase** (`db/`, R1 + R2, 732 pruebas, 40/40 mutaciones detectadas) |
+| Servicio de recálculo (`schedule-service`): 11 pruebas unitarias + 8 de integración contra PostgreSQL real | **Hecho y probado** |
+| Prueba contra un proyecto Supabase real | **Pendiente** (necesita tus cuentas) |
 | Aplicación web | Pendiente |
 | Diseño UX/UI | Pendiente (requiere diseñador) |
 

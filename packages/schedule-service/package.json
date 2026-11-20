@@ -1,0 +1,24 @@
+{
+  "name": "@project-os/schedule-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Orquesta el recálculo del cronograma: lee entradas, calcula con schedule-engine y guarda con apply_schedule (con control de conflictos).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./pg": "./src/pg.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@project-os/schedule-engine": "*"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1"
+  }
+}

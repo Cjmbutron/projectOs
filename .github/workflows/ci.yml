@@ -35,4 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: db/tests/run.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Integración motor ↔ base de datos (usa la BD que dejó db/tests/run.sh)
+      - run: npm test -w @project-os/schedule-service
+        env:
+          POS_DB_URL: postgresql://postgres:postgres@localhost/pos_test
       - run: db/tests/mutation_check.sh

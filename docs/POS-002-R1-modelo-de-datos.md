@@ -1,8 +1,9 @@
-# POS-002 · Modelo de datos R1 (generado)
+# POS-002 · Modelo de datos R1 + R2 (generado)
 
 > Generado automáticamente desde las migraciones por `db/tools/gen_dictionary.sh`. **No editar a mano.**
-> Alcance R1: identidad, organizaciones, roles y permisos, portafolios/programas/proyectos/fases,
-> invitaciones, auditoría. Validado en PostgreSQL 16 con un reemplazo mínimo de Supabase (ver `db/README.md`).
+> Alcance: R1 (identidad, organizaciones, roles y permisos, portafolios/programas/proyectos/fases,
+> invitaciones, auditoría) y R2 (calendario, actividades, restricciones, dependencias, cálculo guardado,
+> avance y líneas base). Validado en PostgreSQL 16 con un reemplazo mínimo de Supabase (ver `db/README.md`).
 
 ## Matriz de permisos por rol
 
@@ -25,8 +26,8 @@
 |---|---|---|
 | **client_stakeholder** | `project.read` | sí |
 | **contributor** | `project.read` | sí |
-| **project_manager** | `project.approve`, `project.change_status`, `project.delete`, `project.manage_members`, `project.read`, `project.update` | no |
-| **team_lead** | `project.read` | no |
+| **project_manager** | `project.approve`, `project.change_status`, `project.delete`, `project.manage_members`, `project.read`, `project.update`, `schedule.baseline`, `schedule.edit` | no |
+| **team_lead** | `project.read`, `schedule.edit` | no |
 | **viewer** | `project.read` | sí |
 
 ### Catálogo de permisos
@@ -53,6 +54,8 @@
 | `project.manage_members` | project | Asignar miembros y roles del proyecto |
 | `project.read` | project | Ver el proyecto |
 | `project.update` | project | Editar datos del proyecto, fases y archivarlo |
+| `schedule.baseline` | project | Crear líneas base del cronograma |
+| `schedule.edit` | project | Editar actividades, dependencias, restricciones y calendario del cronograma |
 
 ## Transiciones de estado de proyecto
 
@@ -81,6 +84,59 @@
 
 ## Tablas
 
+### `activities`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `id` | uuid | no | `gen_random_uuid()` |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `phase_id` | uuid | sí |  |
+| `name` | text | no |  |
+| `description` | text | sí |  |
+| `duration` | integer | no | `1` |
+| `is_milestone` | boolean | sí |  |
+| `assignee_id` | uuid | sí |  |
+| `status` | text | no | `'not_started'::text` |
+| `percent_complete` | smallint | no | `0` |
+| `sort_order` | integer | no | `0` |
+| `early_start` | date | sí |  |
+| `early_finish` | date | sí |  |
+| `late_start` | date | sí |  |
+| `late_finish` | date | sí |  |
+| `total_float` | integer | sí |  |
+| `free_float` | integer | sí |  |
+| `is_critical` | boolean | sí |  |
+| `violated_constraints` | ARRAY | no | `'{}'::text[]` |
+| `created_by` | uuid | sí | `auth.uid()` |
+| `created_at` | timestamp with time zone | no | `now()` |
+| `updated_at` | timestamp with time zone | no | `now()` |
+
+### `activity_constraints`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `id` | uuid | no | `gen_random_uuid()` |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `activity_id` | uuid | no |  |
+| `type` | text | no |  |
+| `date` | date | no |  |
+| `created_at` | timestamp with time zone | no | `now()` |
+
+### `activity_dependencies`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `id` | uuid | no | `gen_random_uuid()` |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `predecessor_id` | uuid | no |  |
+| `successor_id` | uuid | no |  |
+| `type` | text | no | `'FS'::text` |
+| `lag` | integer | no | `0` |
+| `created_at` | timestamp with time zone | no | `now()` |
+
 ### `audit_log`
 
 Bitácora inmutable. actor_id NULL = proceso del sistema.
@@ -97,6 +153,33 @@ Bitácora inmutable. actor_id NULL = proceso del sistema.
 | `old_values` | jsonb | sí |  |
 | `new_values` | jsonb | sí |  |
 | `reason` | text | sí |  |
+
+### `baseline_activities`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `baseline_id` | uuid | no |  |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `activity_id` | uuid | no |  |
+| `name` | text | no |  |
+| `start_date` | date | no |  |
+| `finish_date` | date | no |  |
+| `duration` | integer | no |  |
+
+### `baselines`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `id` | uuid | no | `gen_random_uuid()` |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `version` | integer | no |  |
+| `name` | text | no |  |
+| `project_start` | date | no |  |
+| `project_finish` | date | no |  |
+| `captured_at` | timestamp with time zone | no | `now()` |
+| `captured_by` | uuid | sí | `auth.uid()` |
 
 ### `invitations`
 
@@ -222,6 +305,18 @@ Perfil de cada persona usuaria (1:1 con auth.users). Sin correo.
 | `created_at` | timestamp with time zone | no | `now()` |
 | `updated_at` | timestamp with time zone | no | `now()` |
 
+### `project_calendar_days`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `id` | uuid | no | `gen_random_uuid()` |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `day` | date | no |  |
+| `kind` | text | no |  |
+| `name` | text | sí |  |
+| `created_at` | timestamp with time zone | no | `now()` |
+
 ### `project_members`
 
 | Columna | Tipo | Nulo | Por defecto |
@@ -248,6 +343,23 @@ Perfil de cada persona usuaria (1:1 con auth.users). Sin correo.
 | `planned_start` | date | sí |  |
 | `planned_end` | date | sí |  |
 | `created_at` | timestamp with time zone | no | `now()` |
+| `updated_at` | timestamp with time zone | no | `now()` |
+
+### `project_schedules`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `project_id` | uuid | no |  |
+| `organization_id` | uuid | no |  |
+| `start_date` | date | sí |  |
+| `working_weekdays` | ARRAY | no | `'{1,2,3,4,5}'::smallint[]` |
+| `schedule_version` | integer | no | `0` |
+| `computed_version` | integer | sí |  |
+| `computed_at` | timestamp with time zone | sí |  |
+| `computed_start` | date | sí |  |
+| `computed_finish` | date | sí |  |
+| `duration_days` | integer | sí |  |
+| `warnings` | jsonb | no | `'[]'::jsonb` |
 | `updated_at` | timestamp with time zone | no | `now()` |
 
 ### `project_status_transitions`
@@ -321,10 +433,12 @@ Roles. organization_id NULL = plantilla del sistema (inmutable).
 |---|---|
 | `accept_invitation(p_token text)` | usuarios autenticados |
 | `add_project_member(p_project uuid, p_user uuid, p_role uuid)` | usuarios autenticados |
+| `apply_schedule(p_project uuid, p_expected_version integer, p_actor uuid, p_results jsonb, p_summary jsonb)` | solo servidor (service_role) |
 | `archive_project(p_project uuid, p_archived boolean)` | usuarios autenticados |
 | `change_member_role(p_org uuid, p_user uuid, p_role uuid)` | usuarios autenticados |
 | `change_project_member_role(p_project uuid, p_user uuid, p_role uuid)` | usuarios autenticados |
 | `change_project_status(p_project uuid, p_status text, p_reason text)` | usuarios autenticados |
+| `create_baseline(p_project uuid, p_name text)` | usuarios autenticados |
 | `create_organization(p_name text, p_currency text)` | usuarios autenticados |
 | `create_project(p_org uuid, p_code text, p_name text, p_responsible uuid, p_methodology text, p_profile text, p_currency text, p_description text, p_portfolio uuid, p_program uuid, p_visibility text, p_planned_start date, p_planned_end date)` | usuarios autenticados |
 | `invite_member(p_org uuid, p_email text, p_role uuid, p_membership_type text, p_project uuid, p_project_role uuid)` | usuarios autenticados |
@@ -340,12 +454,27 @@ Roles. organization_id NULL = plantilla del sistema (inmutable).
 | `revoke_invitation(p_invitation uuid)` | usuarios autenticados |
 | `set_member_status(p_org uuid, p_user uuid, p_status text)` | usuarios autenticados |
 | `trash_project(p_project uuid, p_trashed boolean)` | usuarios autenticados |
+| `update_activity_progress(p_activity uuid, p_percent integer)` | usuarios autenticados |
 
 ## Políticas RLS
 
 | Tabla | Política | Operación | Rol |
 |---|---|---|---|
+| `activities` | activities_delete | DELETE | authenticated |
+| `activities` | activities_insert | INSERT | authenticated |
+| `activities` | activities_read | SELECT | authenticated |
+| `activities` | activities_update | UPDATE | authenticated |
+| `activity_constraints` | constraints_delete | DELETE | authenticated |
+| `activity_constraints` | constraints_insert | INSERT | authenticated |
+| `activity_constraints` | constraints_read | SELECT | authenticated |
+| `activity_constraints` | constraints_update | UPDATE | authenticated |
+| `activity_dependencies` | dependencies_delete | DELETE | authenticated |
+| `activity_dependencies` | dependencies_insert | INSERT | authenticated |
+| `activity_dependencies` | dependencies_read | SELECT | authenticated |
+| `activity_dependencies` | dependencies_update | UPDATE | authenticated |
 | `audit_log` | audit_read | SELECT | authenticated |
+| `baseline_activities` | baseline_activities_read | SELECT | authenticated |
+| `baselines` | baselines_read | SELECT | authenticated |
 | `invitations` | invitations_read | SELECT | authenticated |
 | `legal_acceptances` | legal_read_own | SELECT | authenticated |
 | `organization_members` | members_read | SELECT | authenticated |
@@ -360,11 +489,17 @@ Roles. organization_id NULL = plantilla del sistema (inmutable).
 | `programs` | programs_insert | INSERT | authenticated |
 | `programs` | programs_read | SELECT | authenticated |
 | `programs` | programs_update | UPDATE | authenticated |
+| `project_calendar_days` | calendar_delete | DELETE | authenticated |
+| `project_calendar_days` | calendar_insert | INSERT | authenticated |
+| `project_calendar_days` | calendar_read | SELECT | authenticated |
+| `project_calendar_days` | calendar_update | UPDATE | authenticated |
 | `project_members` | project_members_read | SELECT | authenticated |
 | `project_phases` | phases_delete | DELETE | authenticated |
 | `project_phases` | phases_insert | INSERT | authenticated |
 | `project_phases` | phases_read | SELECT | authenticated |
 | `project_phases` | phases_update | UPDATE | authenticated |
+| `project_schedules` | schedules_read | SELECT | authenticated |
+| `project_schedules` | schedules_update | UPDATE | authenticated |
 | `project_status_transitions` | transitions_read | SELECT | authenticated |
 | `projects` | projects_read | SELECT | authenticated |
 | `projects` | projects_update | UPDATE | authenticated |

@@ -51,7 +51,7 @@ mutate "status de proyectos escribible" 0900_rls_and_grants.sql \
   "grant update (name, description, responsible_id, complexity_profile, priority, sort_order," "grant update (status, name, description, responsible_id, complexity_profile, priority, sort_order,"
 mutate "MFA no se exige" 0700_security_helpers.sql \
   "as \$\$ select private.is_active_member(p_org) and private.mfa_satisfied(p_org) \$\$;" "as \$\$ select private.is_active_member(p_org) \$\$;"
-mutate "externos ven proyectos de visibilidad organización" 0700_security_helpers.sql \
+mutate "externos ven proyectos de visibilidad organización" 1200_schedule_core.sql \
   "and m.status = 'active' and m.membership_type = 'internal'))" "and m.status = 'active'))"
 mutate "has_org_permission ignora la organización" 0700_security_helpers.sql \
   "where m.organization_id = p_org and m.user_id = auth.uid()
@@ -94,6 +94,61 @@ mutate "login: un acierto levanta el bloqueo" 1000_login_attempts.sql \
   end if;"
 mutate "panel sin security_invoker" 1100_dashboard.sql \
   "with (security_invoker = true) as" "as"
+
+# ---- R2: cronograma ----
+mutate "apply_schedule ignora la versión (sin bloqueo optimista)" 1400_schedule_api.sql \
+  "if v_sched.schedule_version <> p_expected_version then" "if false then"
+mutate "apply_schedule sin comprobar permiso del actor" 1400_schedule_api.sql \
+  "if p_actor is null or not private.user_can_project(p_actor, p_project, 'schedule.edit') then" "if false then"
+mutate "apply_schedule ejecutable por usuarios" 1400_schedule_api.sql \
+  "grant execute on function public.apply_schedule(uuid, integer, uuid, jsonb, jsonb) to service_role;" "grant execute on function public.apply_schedule(uuid, integer, uuid, jsonb, jsonb) to authenticated, service_role;"
+mutate "avance sin comprobar permiso" 1400_schedule_api.sql \
+  "if not coalesce(private.has_project_permission(v_act.project_id, 'schedule.edit')" "if false and coalesce(private.has_project_permission(v_act.project_id, 'schedule.edit')"
+mutate "línea base sin exigir cronograma al día" 1400_schedule_api.sql \
+  "if v_sched.computed_version is distinct from v_sched.schedule_version then" "if false then"
+mutate "sin guardia de ciclos" 1200_schedule_core.sql \
+  "create trigger dependencies_cycle_guard before insert on public.activity_dependencies
+  for each row execute function private.dependencies_cycle_guard();" "-- sin guardia"
+mutate "la duración no sube la versión" 1200_schedule_core.sql \
+  "create trigger activities_bump_duration after update of duration on public.activities
+  for each row when (old.duration is distinct from new.duration)
+  execute function private.bump_schedule_trigger();" "-- sin bump"
+mutate "actividades editables en proyecto cerrado" 1200_schedule_core.sql \
+  "  perform private.assert_project_writable(v_project);
+  if tg_op = 'DELETE' then
+    return old;
+  end if;" "  if tg_op = 'DELETE' then
+    return old;
+  end if;"
+mutate "papelera visible para miembros (datos hijos)" 1200_schedule_core.sql \
+  "      and (p.deleted_at is null or private.has_project_permission(p.id, 'project.delete'))
+" ""
+mutate "línea base modificable" 1300_baselines.sql \
+  "create trigger baselines_immutable before update or delete on public.baselines
+  for each row execute function private.baseline_immutable();" "-- sin bloqueo"
+mutate "actividades: inserción sin permiso" 1500_schedule_rls.sql \
+  "create policy activities_insert on public.activities for insert to authenticated
+  with check (private.has_project_permission(project_id, 'schedule.edit'));" "create policy activities_insert on public.activities for insert to authenticated
+  with check (true);"
+mutate "fechas calculadas escribibles por usuarios" 1500_schedule_rls.sql \
+  "grant update (phase_id, name, description, duration, assignee_id, sort_order) on public.activities to authenticated;" "grant update (early_start, phase_id, name, description, duration, assignee_id, sort_order) on public.activities to authenticated;"
+mutate "dependencias legibles por cualquier usuario" 1500_schedule_rls.sql \
+  "create policy dependencies_read on public.activity_dependencies for select to authenticated
+  using (private.can_read_project(project_id));" "create policy dependencies_read on public.activity_dependencies for select to authenticated
+  using (true);"
+mutate "líneas base legibles por cualquier usuario" 1500_schedule_rls.sql \
+  "create policy baselines_read on public.baselines for select to authenticated
+  using (private.can_read_project(project_id));" "create policy baselines_read on public.baselines for select to authenticated
+  using (true);"
+
+mutate "avance: sin coalesce externo (NULL salta el rechazo)" 1400_schedule_api.sql \
+  "if not coalesce(private.has_project_permission(v_act.project_id, 'schedule.edit')
+          or (coalesce(v_act.assignee_id = v_uid, false)" "if not (private.has_project_permission(v_act.project_id, 'schedule.edit')
+          or (v_act.assignee_id = v_uid"
+mutate "guardia de ciclos con privilegios elevados (filtra el grafo)" 1200_schedule_core.sql \
+  "create function private.dependencies_cycle_guard() returns trigger
+language plpgsql set search_path = ''" "create function private.dependencies_cycle_guard() returns trigger
+language plpgsql security definer set search_path = ''"
 
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"

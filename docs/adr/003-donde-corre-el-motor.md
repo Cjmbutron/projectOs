@@ -32,6 +32,16 @@ de inmediato (US-066).
 - Alternativa descartada: recalcular en cada lectura. Simplifica la escritura, pero obliga a cargar toda la red
   para mostrar una lista de tareas.
 
+## Implementación en base de datos (migraciones 1200–1500)
+
+- `project_schedules.schedule_version` sube con cada cambio de entradas (actividades nuevas/borradas, duración,
+  dependencias, restricciones, calendario). `apply_schedule(project, versión_esperada, actor, resultados, resumen)`
+  falla con `schedule_conflict` (SQLSTATE 40001) si la versión cambió y escribe todo o nada.
+- `apply_schedule` es **solo para `service_role`**: el servidor autentica a la persona (incluido MFA), calcula con el
+  motor y pasa el actor; la base vuelve a comprobar `schedule.edit` y la coherencia de los resultados, pero **no**
+  recalcula el CPM. Quien tiene `schedule.edit` no puede escribir fechas calculadas directamente.
+
 ## Pendiente
 
-Diseño exacto de la tabla de resultados y de la función `apply_schedule` (migraciones R2, POS-002 §6).
+Medir `apply_schedule` con 5 000 actividades en un entorno Supabase real, y el rendimiento de la guardia de ciclos
+en importaciones masivas.
