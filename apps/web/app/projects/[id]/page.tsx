@@ -271,7 +271,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             </form>
           );
           return (
-            <details key={a.id} id={`dep-${a.id}`} open={sp.open === a.id} style={{ borderTop: '1px solid var(--border, #ddd)', padding: '6px 0' }}>
+            <details key={a.id} id={`dep-${a.id}`} open={sp.open === a.id} style={{ borderTop: '1px solid var(--line)', padding: '6px 0' }}>
               <summary>{actLabel(i, a.name)} — {preds.length} predecesora(s), {succs.length} sucesora(s)</summary>
               <h3>Predecesoras</h3>
               {preds.length === 0 ? <p>Ninguna.</p> : <ul>{preds.map((d) => row(d, label(d.predecessor_id)))}</ul>}

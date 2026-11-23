@@ -46,7 +46,7 @@ export default async function LoadPage({ searchParams }: { searchParams: Promise
               <tr key={r.resource.id}>
                 <th scope="row">{r.resource.name}{r.resource.active ? '' : ' (inactivo)'}</th>
                 {r.cells.map((c, i) => (
-                  <td key={starts[i]} style={c?.over ? { fontWeight: 600, color: 'var(--danger, #b00020)' } : undefined}>{cellLabel(c)}</td>
+                  <td key={starts[i]} style={c?.over ? { fontWeight: 600, color: 'var(--danger)' } : undefined}>{cellLabel(c)}</td>
                 ))}
               </tr>
             ))}</tbody>

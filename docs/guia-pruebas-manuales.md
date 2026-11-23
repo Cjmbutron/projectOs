@@ -1,4 +1,4 @@
-# Guía de pruebas manuales (entregas 10 a 31)
+# Guía de pruebas manuales (entregas 10 a 32)
 
 Para probar en **tu Supabase real** lo que hasta ahora solo se probó con un reemplazo local. Marca cada punto y
 anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige rápido.
@@ -23,6 +23,15 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] Cambia el tipo o el desfase de una dependencia y guarda; después de recalcular, las fechas cambian como corresponde.
 - [ ] Tras agregar, cambiar o quitar, el panel de esa actividad sigue abierto.
 - [ ] Como miembro sin permiso de edición, ves las dependencias pero no los formularios.
+
+### Estilo oscuro y barra lateral (entrega 32) — todas las pantallas internas
+- [ ] Barra lateral con Proyectos, Mis actividades, Recursos y Carga semanal; la sección actual aparece resaltada (en Carga semanal, solo ella).
+- [ ] Cabecera con tu correo y «Salir»; «Salir» te devuelve a `/login`.
+- [ ] En el móvil (o ventana estrecha) la barra se oculta y se abre con «Menú»; se cierra al navegar.
+- [ ] Insignias de salud con texto (Verde/Ámbar/Rojo/Sin datos) legibles sobre el fondo oscuro.
+- [ ] El Gantt se ve bien: barras, ruta crítica en rojo, dependencias, fines de semana y la barra seleccionada.
+- [ ] Formularios: los campos se distinguen del fondo y el foco con teclado se ve (Tab).
+- [ ] Anota cualquier texto ilegible, color que no se distinga o pantalla que se vea «sin estilo».
 
 ## 2. Charter, línea base, salud, requisitos (entregas 11–14)
 - [ ] `/charter`: no pasa de borrador a propuesto sin objetivos, alcance y al menos un stakeholder.

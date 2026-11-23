@@ -106,7 +106,7 @@ export default async function CharterPage({ params, searchParams }: { params: Pr
           <div key={f}>
             <label htmlFor={`c-${f}`}>{LABEL[f]}</label>
             <textarea id={`c-${f}`} name={f} rows={3} maxLength={8000} defaultValue={charter?.[f] ?? ''} disabled={!editable}
-              style={{ width: '100%', padding: 10, border: '1px solid var(--line)', borderRadius: 8, background: 'var(--bg)', color: 'var(--fg)', font: 'inherit' }} />
+              style={{ width: '100%', padding: 10, border: '1px solid var(--field)', borderRadius: 8, background: 'var(--bg)', color: 'var(--fg)', font: 'inherit' }} />
           </div>
         ))}
         {editable ? <button>Guardar charter</button> : <p>El charter es de solo lectura desde que el proyecto fue aprobado.</p>}

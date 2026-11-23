@@ -29,3 +29,6 @@ export function parseThresholds(f: { get(name: string): unknown }): ThresholdPar
   }
   return { ok: true, amber, red };
 }
+
+/** Clase de insignia por salud (el texto del estado siempre se muestra al lado). */
+export const HEALTH_BADGE: Record<Health, string> = { green: 'badge badge-ok', amber: 'badge badge-warn', red: 'badge badge-danger', unknown: 'badge badge-neutral' };

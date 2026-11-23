@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { LogoutButton } from '@/components';
-import { HEALTH_ICON, HEALTH_LABEL, isHealth, parseThresholds, summarizeHealth } from '@/lib/health';
+import { HEALTH_BADGE, HEALTH_LABEL, isHealth, parseThresholds, summarizeHealth } from '@/lib/health';
 import { messageFor } from '@/lib/errors';
 import { createClient } from '@/lib/supabase/server';
 
@@ -44,7 +43,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
     .from('projects').select('id,code,name,status,health,progress_percent,organization_id').is('deleted_at', null).order('code');
   return (
     <main>
-      <div className="row"><h1>Proyectos — {orgs[0].name}</h1><Link href="/mis-actividades">Mis actividades</Link> <Link href="/resources">Recursos</Link> <LogoutButton /></div>
+      <h1>Proyectos — {orgs[0].name}</h1>
       {projects && projects.length > 0 && (() => {
         const sum = summarizeHealth(projects);
         return (
@@ -52,7 +51,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
             <p className="legend">
               <strong>{sum.total} proyecto(s)</strong>
               {(['green', 'amber', 'red', 'unknown'] as const).map((h) => (
-                <span key={h}>{HEALTH_ICON[h]} {HEALTH_LABEL[h]}: {sum.counts[h]}</span>
+                <span key={h} className={HEALTH_BADGE[h]}>{HEALTH_LABEL[h]}: {sum.counts[h]}</span>
               ))}
             </p>
           </div>
@@ -62,7 +61,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
         {projects && projects.length > 0 ? (
           <table><thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th>Salud</th><th>Avance</th></tr></thead>
             <tbody>{projects.map((p) => (
-              <tr key={p.id}><td>{p.code}</td><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{p.status}</td><td>{isHealth(p.health) ? `${HEALTH_ICON[p.health]} ${HEALTH_LABEL[p.health]}` : '—'}</td><td>{Number(p.progress_percent ?? 0)} %</td></tr>
+              <tr key={p.id}><td>{p.code}</td><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{p.status}</td><td>{isHealth(p.health) ? <span className={HEALTH_BADGE[p.health]}>{HEALTH_LABEL[p.health]}</span> : '—'}</td><td>{Number(p.progress_percent ?? 0)} %</td></tr>
             ))}</tbody></table>
         ) : <p>Aún no hay proyectos.</p>}
       </div>
