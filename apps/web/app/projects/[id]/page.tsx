@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { ImportCsv, RecalcButton } from '@/components';
 import { messageFor } from '@/lib/errors';
 import { UUID_RE } from '@/lib/http';
+import { loadRange, overloadedAmong, shortDate, type LoadRow } from '@/lib/load';
 import { canReportProgress, parseProgress, progressErrorCode, STATUS_LABEL } from '@/lib/progress';
 import { formatHours, parseAssignForm, resourceErrorCode } from '@/lib/resources';
 import { parseDependencyForm } from '@/lib/schedule/dependency-form';
@@ -105,7 +106,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   if (!UUID_RE.test(id)) notFound();
   const sp = await searchParams;
   const supabase = await createClient();
-  const { data: project } = await supabase.from('projects').select('id,code,name,status,progress_percent').eq('id', id).maybeSingle();
+  const { data: project } = await supabase.from('projects').select('id,organization_id,code,name,status,progress_percent').eq('id', id).maybeSingle();
   if (!project) notFound();
   const [{ data: sched }, { data: acts }, { data: deps }, { data: nodes }] = await Promise.all([
     supabase.from('project_schedules').select('start_date,schedule_version,computed_version,computed_start,computed_finish').eq('project_id', id).maybeSingle(),
@@ -122,10 +123,17 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
     supabase.from('activity_resources').select('id,activity_id,resource_id,allocation_percent').eq('project_id', id).order('created_at'),
     supabase.from('resources').select('id,name,daily_hours,active').order('name'),
   ]);
-  // Quien edita el cronograma asigna en todas; el responsable, solo en sus actividades (la BD decide de verdad)
-  const assignable = (acts ?? []).filter((a) => canReportProgress({ canEditSchedule: canEditData === true, userId: me, assigneeId: a.assignee_id }));
-  const assignableIds = new Set(assignable.map((a) => a.id));
+  // Asignar recursos: quien edita el cronograma o cualquier miembro interno del proyecto con rol de escritura (la BD decide de verdad)
+  const { data: canAssignData } = await supabase.rpc('can_assign_resources', { p_project: id });
+  const canAssign = canAssignData === true;
   const resName = new Map((resList ?? []).map((r) => [r.id, r.name]));
+  // Aviso de sobreasignación (todos los proyectos): solo para quien puede ver la carga; si falla, no se muestra
+  const range = loadRange((acts ?? []).map((a) => a.early_start), (acts ?? []).map((a) => a.early_finish));
+  const assignedIds = [...new Set((assigns ?? []).map((x) => x.resource_id))];
+  const loadRes = range && assignedIds.length > 0
+    ? await supabase.rpc('resource_load', { p_org: project.organization_id, p_from: range.from, p_to: range.to })
+    : null;
+  const overloads = loadRes && !loadRes.error ? overloadedAmong((loadRes.data ?? []) as LoadRow[], assignedIds) : [];
   const stale = sched && sched.computed_version !== sched.schedule_version;
   return (
     <main>
@@ -169,22 +177,28 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       </div>
       <div className="card">
         <h2>Recursos asignados</h2>
-        {canEditData !== true && assignable.length > 0 && <p style={{ color: 'var(--muted)' }}>Puedes asignar recursos a las actividades en las que eres responsable.</p>}
+        {canAssign && canEditData !== true && <p style={{ color: 'var(--muted)' }}>Como miembro del proyecto puedes asignar recursos a cualquier actividad; no modifica el cronograma.</p>}
+        {overloads.length > 0 && (
+          <p role="status" className="err">
+            Sobreasignación (suma todos los proyectos): {overloads.map((o) => `${resName.get(o.resourceId) ?? '—'} en ${o.weeks.length} semana(s), desde el ${shortDate(o.weeks[0])}`).join('; ')}.{' '}
+            <Link href={`/resources/load?from=${overloads.map((o) => o.weeks[0]).sort()[0]}`}>Ver carga semanal</Link>
+          </p>
+        )}
         {(assigns ?? []).length === 0 ? <p>Sin recursos asignados.</p> : (
-          <table><thead><tr><th>Actividad</th><th>Recurso</th><th>Dedicación</th>{assignable.length > 0 && <th></th>}</tr></thead>
+          <table><thead><tr><th>Actividad</th><th>Recurso</th><th>Dedicación</th>{canAssign && <th></th>}</tr></thead>
             <tbody>{(assigns ?? []).map((x) => (
               <tr key={x.id}><td>{nameOf.get(x.activity_id)}</td><td>{resName.get(x.resource_id) ?? '—'}</td><td>{x.allocation_percent} %</td>
-                {assignable.length > 0 && (
-                  <td>{assignableIds.has(x.activity_id) && <form action={unassignResource}><input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={x.id} />
-                    <button className="secondary" style={{ marginTop: 0 }}>Quitar</button></form>}</td>
+                {canAssign && (
+                  <td><form action={unassignResource}><input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={x.id} />
+                    <button className="secondary" style={{ marginTop: 0 }}>Quitar</button></form></td>
                 )}</tr>
             ))}</tbody></table>
         )}
-        {assignable.length > 0 && (resList ?? []).some((r) => r.active) && (
+        {canAssign && (acts ?? []).length > 0 && (resList ?? []).some((r) => r.active) && (
           <form action={assignResource}>
             <input type="hidden" name="project" value={id} />
             <label htmlFor="as-activity">Actividad</label>
-            <select id="as-activity" name="activity" required>{assignable.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+            <select id="as-activity" name="activity" required>{(acts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
             <label htmlFor="as-resource">Recurso</label>
             <select id="as-resource" name="resource" required>{(resList ?? []).filter((r) => r.active).map((r) => <option key={r.id} value={r.id}>{r.name} ({formatHours(Number(r.daily_hours))}/día)</option>)}</select>
             <label htmlFor="as-percent">Dedicación (% de su jornada, 1 a 100)</label>
@@ -192,7 +206,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             <button>Asignar recurso</button>
           </form>
         )}
-        {assignable.length > 0 && (resList ?? []).filter((r) => r.active).length === 0 && <p style={{ color: 'var(--muted)' }}>No hay recursos activos. <Link href="/resources">Crear recursos</Link></p>}
+        {canAssign && (resList ?? []).filter((r) => r.active).length === 0 && <p style={{ color: 'var(--muted)' }}>No hay recursos activos. <Link href="/resources">Crear recursos</Link></p>}
       </div>
       <div className="card">
         <h2>Dependencias</h2>

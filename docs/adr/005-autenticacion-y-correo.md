@@ -24,8 +24,10 @@ por IP o por frecuencia de envío.
 1. **Bloqueo por intentos fallidos propio.** El inicio de sesión pasa por una ruta del servidor que registra
    intentos (tabla accesible solo con la clave de servicio) y aplica el bloqueo de RNF-01, antes de llamar a
    Supabase Auth. Esto implica que el cliente **no** llama a Auth directamente para iniciar sesión.
-   *Antes de implementarlo se debe revisar la configuración de Auth en la documentación del CLI de Supabase:
-   si ofrece ahora un bloqueo nativo por usuario, se prefiere ese.*
+   *Verificado el 22-nov-2026 en la página de límites de tasa de Supabase Auth (https://supabase.com/docs/guides/auth/rate-limits):
+   el endpoint de contraseña solo se limita por IP (150 por 5 min, configurable) y no se describe ningún bloqueo
+   por usuario tras intentos fallidos. Por eso se mantiene el bloqueo propio. Si esa documentación cambia, o si
+   una versión futura lo ofrece, se vuelve a evaluar. No se revisó el CLI ni el panel de un proyecto concreto.*
 2. **Correo transaccional con SMTP propio desde el inicio del desarrollo con usuarios reales.** El proveedor
    integrado (2 correos/h) sirve solo para pruebas locales. Se elige un proveedor (p. ej. Resend o Postmark;
    decisión y costo pendientes) y plantillas en español e inglés.

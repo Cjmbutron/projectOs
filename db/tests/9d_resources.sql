@@ -89,9 +89,12 @@ begin
   perform t.as_user('auditor_a');
   perform t.lives('team_lead asigna (schedule.edit)', format('insert into public.activity_resources (organization_id, project_id, activity_id, resource_id) values (%L, %L, %L, %L)', v_org, v_p, v_a2, v_r1));
   perform t.as_user('member_a');
-  perform t.throws('contributor no asigna', format('insert into public.activity_resources (organization_id, project_id, activity_id, resource_id) values (%L, %L, %L, %L)', v_org, v_p, v_a3, v_r1), '42501');
+  perform t.as_user('portfolio_a');
+  perform t.throws('quien no es miembro del proyecto no asigna', format('insert into public.activity_resources (organization_id, project_id, activity_id, resource_id) values (%L, %L, %L, %L)', v_org, v_p, v_a3, v_r1), '42501');
+  perform t.as_user('member_a');
   perform t.eq('contributor ve las asignaciones de su proyecto', t.count_of('select 1 from public.activity_resources'), 2::bigint);
-  perform t.eq('contributor no cambia asignaciones (0 filas)', t.affected(format('update public.activity_resources set allocation_percent = 5 where id = %L', v_as1)), 0::bigint);
+  perform t.lives('contributor cambia la dedicación (migración 2700)', format('update public.activity_resources set allocation_percent = 5 where id = %L', v_as1));
+  perform t.lives('y la deja otra vez en 50', format('update public.activity_resources set allocation_percent = 50 where id = %L', v_as1));
   perform t.as_user('member_b');
   perform t.eq('otra organización no ve asignaciones', t.count_of('select 1 from public.activity_resources'), 0::bigint);
   perform t.as_user('pm_a');

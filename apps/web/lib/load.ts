@@ -61,3 +61,28 @@ export function shortDate(iso: string): string {
   const d = new Date(t);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 }
+
+export interface Overload { resourceId: string; weeks: string[] }
+
+/** Recursos (entre `resourceIds`) con semanas sobreasignadas, por orden de aparición de `resourceIds`; semanas ordenadas. */
+export function overloadedAmong(rows: LoadRow[], resourceIds: string[]): Overload[] {
+  const wanted = new Set(resourceIds);
+  const byRes = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (r.overallocated !== true || !wanted.has(r.resource_id)) continue;
+    (byRes.get(r.resource_id) ?? byRes.set(r.resource_id, new Set()).get(r.resource_id)!).add(r.week_start);
+  }
+  return [...new Set(resourceIds)].filter((id) => byRes.has(id)).map((id) => ({ resourceId: id, weeks: [...byRes.get(id)!].sort() }));
+}
+
+/** Rango a consultar para el aviso: de la primera a la última fecha de actividades, a lo sumo 372 días desde el inicio. */
+export function loadRange(starts: (string | null)[], finishes: (string | null)[]): { from: string; to: string } | null {
+  const s = starts.filter((x): x is string => !!x && parseIso(x) !== null).sort();
+  const f = finishes.filter((x): x is string => !!x && parseIso(x) !== null).sort();
+  if (!s.length || !f.length) return null;
+  const from = mondayOf(s[0]);
+  const last = f[f.length - 1];
+  const cap = shiftIso(from, 371);
+  const to = last < from ? from : last > cap ? cap : last;
+  return { from, to };
+}

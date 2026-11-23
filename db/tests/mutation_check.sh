@@ -376,28 +376,33 @@ mutate "recursos: can_manage_resources siempre verdadero" 2400_can_manage_resour
   "select coalesce(private.has_org_permission(p_org, 'resource.manage'), false)" "select true"
 mutate "recursos: can_manage_resources con otro permiso" 2400_can_manage_resources.sql \
   "private.has_org_permission(p_org, 'resource.manage')" "private.has_org_permission(p_org, 'project.create')"
-mutate "asignar: el responsable puede asignar en cualquier actividad" 2600_assignee_assigns_resources.sql \
-  "where a.id = p_activity and a.project_id = p_project and a.assignee_id = auth.uid())" "where a.project_id = p_project and a.assignee_id = auth.uid())"
-mutate "asignar: cualquiera asigna sin ser responsable" 2600_assignee_assigns_resources.sql \
-  "where a.id = p_activity and a.project_id = p_project and a.assignee_id = auth.uid())" "where a.id = p_activity and a.project_id = p_project)"
-mutate "asignar: el responsable no necesita ser miembro del proyecto" 2600_assignee_assigns_resources.sql \
-  "join public.project_members pm on pm.project_id = a.project_id and pm.user_id = auth.uid()" "left join public.project_members pm on pm.project_id = a.project_id and pm.user_id = auth.uid()"
-mutate "asignar: se pierde el permiso schedule.edit" 2600_assignee_assigns_resources.sql \
+mutate "asignar: un viewer puede asignar" 2700_members_assign_resources.sql \
+  "and r.key in ('project_manager', 'team_lead', 'contributor')" "and r.key in ('project_manager', 'team_lead', 'contributor', 'viewer')"
+mutate "asignar: un cliente/stakeholder puede asignar" 2700_members_assign_resources.sql \
+  "and r.key in ('project_manager', 'team_lead', 'contributor')" "and r.key <> 'viewer'"
+mutate "asignar: no exige rol del proyecto" 2700_members_assign_resources.sql \
+  "join public.roles r on r.id = pm.role_id and r.is_system and r.scope = 'project'
+         and r.key in ('project_manager', 'team_lead', 'contributor')" "left join public.roles r on r.id = pm.role_id"
+mutate "asignar: un miembro suspendido puede asignar" 2700_members_assign_resources.sql \
+  "and m.status = 'active' and m.membership_type = 'internal'" "and m.membership_type = 'internal'"
+mutate "asignar: un externo puede asignar" 2700_members_assign_resources.sql \
+  "and m.status = 'active' and m.membership_type = 'internal'" "and m.status = 'active'"
+mutate "asignar: se pierde el permiso schedule.edit" 2700_members_assign_resources.sql \
   "select coalesce(private.has_project_permission(p_project, 'schedule.edit'), false)" "select false"
-mutate "asignar: el responsable no necesita ser miembro interno activo" 2600_assignee_assigns_resources.sql \
-  "and m.status = 'active' and m.membership_type = 'internal'
-        join" "
-        join"
-mutate "asignar: el responsable puede cambiar asignaciones ajenas (update)" 2600_assignee_assigns_resources.sql \
+mutate "asignar: borrar sin control" 2600_assignee_assigns_resources.sql \
+  "create policy activity_resources_delete on public.activity_resources for delete to authenticated
+  using (private.can_assign_resources(project_id, activity_id));" "create policy activity_resources_delete on public.activity_resources for delete to authenticated
+  using (true);"
+mutate "asignar: cambiar asignaciones sin control" 2600_assignee_assigns_resources.sql \
   "using (private.can_assign_resources(project_id, activity_id))
   with check (private.can_assign_resources(project_id, activity_id));
 create policy activity_resources_delete" "using (true)
   with check (private.can_assign_resources(project_id, activity_id));
 create policy activity_resources_delete"
-mutate "asignar: borrar sin control" 2600_assignee_assigns_resources.sql \
-  "create policy activity_resources_delete on public.activity_resources for delete to authenticated
-  using (private.can_assign_resources(project_id, activity_id));" "create policy activity_resources_delete on public.activity_resources for delete to authenticated
-  using (true);"
+mutate "asignar: la interfaz ofrece asignar a quien no puede leer el proyecto" 2700_members_assign_resources.sql \
+  "select coalesce(private.can_read_project(p_project) and private.can_assign_resources(p_project, null), false)" "select coalesce(private.can_assign_resources(p_project, null), false)"
+mutate "asignar: la interfaz siempre ofrece asignar" 2700_members_assign_resources.sql \
+  "select coalesce(private.can_read_project(p_project) and private.can_assign_resources(p_project, null), false)" "select true"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

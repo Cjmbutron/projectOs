@@ -89,3 +89,32 @@ describe('cellLabel / shortDate', () => {
     expect(shortDate('x')).toBe('x');
   });
 });
+
+import { loadRange, overloadedAmong } from '@/lib/load';
+
+describe('overloadedAmong', () => {
+  const row = (r: string, w: string, over: boolean) => ({ resource_id: r, week_start: w, hours: 1, capacity_hours: 1, overallocated: over });
+  it('solo recursos pedidos y solo semanas sobreasignadas, ordenadas y sin duplicar', () => {
+    const rows = [row('a', '2026-03-09', true), row('a', '2026-03-02', true), row('a', '2026-03-16', false), row('b', '2026-03-02', true), row('c', '2026-03-02', true), row('a', '2026-03-02', true)];
+    expect(overloadedAmong(rows, ['c', 'a', 'a', 'z'])).toEqual([{ resourceId: 'c', weeks: ['2026-03-02'] }, { resourceId: 'a', weeks: ['2026-03-02', '2026-03-09'] }]);
+  });
+  it('sin sobreasignación → vacío', () => { expect(overloadedAmong([row('a', '2026-03-02', false)], ['a'])).toEqual([]); });
+});
+
+describe('loadRange', () => {
+  it('del lunes de la primera fecha a la última fecha', () => {
+    expect(loadRange(['2026-03-05', '2026-03-03', null], ['2026-04-10', '2026-04-01'])).toEqual({ from: '2026-03-02', to: '2026-04-10' });
+  });
+  it('sin fechas → null; fechas inválidas se ignoran', () => {
+    expect(loadRange([null], [null])).toBeNull();
+    expect(loadRange(['x'], ['2026-03-05'])).toBeNull();
+  });
+  it('limita a 372 días desde el lunes inicial (371 días después)', () => {
+    expect(loadRange(['2026-03-02'], ['2030-01-01'])).toEqual({ from: '2026-03-02', to: '2027-03-08' });
+    expect(loadRange(['2026-03-02'], ['2027-03-08'])).toEqual({ from: '2026-03-02', to: '2027-03-08' });
+    expect(loadRange(['2026-03-02'], ['2027-03-09'])).toEqual({ from: '2026-03-02', to: '2027-03-08' });
+  });
+  it('un fin anterior al lunes de inicio se ajusta al inicio', () => {
+    expect(loadRange(['2026-03-05'], ['2026-03-01'])).toEqual({ from: '2026-03-02', to: '2026-03-02' });
+  });
+});

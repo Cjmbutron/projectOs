@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **1149 pruebas, 0 fallos; 129/129 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las 7 de la 2600 se corrieron aparte).
+Estado actual: **1160 pruebas, 0 fallos; 132 de 133 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las de las migraciones 2600 y 2700 se corrieron aparte; el único sobreviviente es una guarda redundante, ver 2700).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -122,3 +122,8 @@ Estado actual: **1149 pruebas, 0 fallos; 129/129 mutaciones detectadas** (122 en
 ### 2600 · El responsable asigna recursos en sus actividades
 - Asignar, cambiar la dedicación o quitar un recurso exige `schedule.edit` **o** ser el responsable (`assignee_id`) de esa actividad, siendo además miembro interno activo de la organización y miembro del proyecto (mismo criterio que el registro de avance). No puede tocar asignaciones de actividades ajenas ni cambia nada más del cronograma.
 - Helper `private.can_assign_resources(proyecto, actividad)`, usado por las tres políticas de `activity_resources`.
+
+### 2700 · Todo miembro interno del proyecto asigna recursos
+- Decisión del 21-nov-2026: sustituye la regla de la 2600. Asigna, cambia la dedicación o quita recursos en **cualquier** actividad quien tiene `schedule.edit` o es miembro del proyecto con rol `project_manager`, `team_lead` o `contributor` **y** miembro interno activo de la organización. Quedan fuera `client_stakeholder`, `viewer`, externos y suspendidos. No toca fechas ni el resto del cronograma.
+- `public.can_assign_resources(proyecto)`: lo que consulta la interfaz para mostrar el formulario (la decisión real la toma RLS).
+- Mutante sobreviviente conocido: quitar `can_read_project` de esa función pública no cambia ningún resultado observable (quien puede asignar siempre puede leer); queda como guarda redundante.
