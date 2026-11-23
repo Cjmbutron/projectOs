@@ -304,6 +304,54 @@ mutate "requisitos: avanzar uno aprobado también exige scope.review" 2200_requi
   "and not (old.status in ('approved', 'implemented', 'verified') and new.status in ('approved', 'implemented', 'verified'));" ";"
 mutate "requisitos: el permiso no se comprueba" 2200_requirements_review.sql \
   "if v_gated and not private.has_project_permission(new.project_id, 'scope.review') then" "if false then"
+mutate "recursos: project_manager sin resource.manage" 2300_resources.sql \
+  "r.key in ('owner', 'admin', 'project_manager')" "r.key in ('owner', 'admin')"
+mutate "recursos: un externo ve los recursos" 2300_resources.sql \
+  "using (private.is_internal_member(organization_id));" "using (private.can_access_org(organization_id));"
+mutate "recursos: se puede vincular a un externo" 2300_resources.sql \
+  "      perform private.assert_internal_active_member(new.organization_id, new.user_id, 'resource_user');" "      null;"
+mutate "recursos: un equipo con miembro" 2300_resources.sql \
+  "if new.kind <> 'person' then" "if false then"
+mutate "recursos: asignar un recurso inactivo" 2300_resources.sql \
+  "where r.id = new.resource_id and r.active)" "where r.id = new.resource_id)"
+mutate "recursos: borrar un recurso borra sus asignaciones" 2300_resources.sql \
+  "references public.resources (id, organization_id) on delete restrict" "references public.resources (id, organization_id) on delete cascade"
+mutate "recursos: dedicación 0 permitida" 2300_resources.sql \
+  "check (allocation_percent between 1 and 100)" "check (allocation_percent between 0 and 100)"
+mutate "recursos: crear recursos sin resource.manage" 2300_resources.sql \
+  "create policy resources_insert on public.resources for insert to authenticated
+  with check (private.has_org_permission(organization_id, 'resource.manage'));" "create policy resources_insert on public.resources for insert to authenticated
+  with check (private.can_access_org(organization_id));"
+mutate "recursos: asignar sin schedule.edit" 2300_resources.sql \
+  "create policy activity_resources_insert on public.activity_resources for insert to authenticated
+  with check (private.has_project_permission(project_id, 'schedule.edit'));" "create policy activity_resources_insert on public.activity_resources for insert to authenticated
+  with check (private.can_read_project(project_id));"
+mutate "recursos: la carga la consulta cualquiera" 2300_resources.sql \
+  "if not private.is_internal_member(p_org) then" "if false then"
+mutate "recursos: la carga ignora feriados" 2300_resources.sql \
+  "               and not exists (select 1 from public.project_calendar_days c where c.project_id = ar.project_id and c.day = g.day::date and c.kind = 'holiday')))" "               ))"
+mutate "recursos: la carga ignora días laborables extra" 2300_resources.sql \
+  "(exists (select 1 from public.project_calendar_days c where c.project_id = ar.project_id and c.day = g.day::date and c.kind = 'working')
+           or" "(false
+           or"
+mutate "recursos: la carga cuenta proyectos en la papelera" 2300_resources.sql \
+  "p.deleted_at is null and p.status <> 'cancelled'" "p.status <> 'cancelled'"
+mutate "recursos: la carga cuenta proyectos cancelados" 2300_resources.sql \
+  "p.deleted_at is null and p.status <> 'cancelled'" "p.deleted_at is null"
+mutate "recursos: la carga no recorta por el rango" 2300_resources.sql \
+  "generate_series(greatest(a.early_start, p_from), least(a.early_finish, p_to)" "generate_series(a.early_start, a.early_finish"
+mutate "recursos: la capacidad semanal es de 4 días" 2300_resources.sql \
+  "round(w.daily_hours * 5, 2), (round(w.h, 2) > round(w.daily_hours * 5, 2))" "round(w.daily_hours * 4, 2), (round(w.h, 2) > round(w.daily_hours * 4, 2))"
+mutate "recursos: sobreasignado con exactamente la capacidad" 2300_resources.sql \
+  "(round(w.h, 2) > round(w.daily_hours * 5, 2))" "(round(w.h, 2) >= round(w.daily_hours * 5, 2))"
+mutate "recursos: la carga ignora el porcentaje de dedicación" 2300_resources.sql \
+  "sum(d.allocation_percent / 100.0 * d.daily_hours)" "sum(d.daily_hours)"
+mutate "recursos: rango máximo de 373 días" 2300_resources.sql \
+  "if p_to - p_from > 372 then" "if p_to - p_from > 373 then"
+mutate "recursos: la carga no suma otros proyectos" 2300_resources.sql \
+  "where ar.organization_id = p_org
+      and p.deleted_at" "where ar.organization_id = p_org and private.can_read_project(ar.project_id)
+      and p.deleted_at"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

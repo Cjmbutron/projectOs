@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **1004 pruebas, 0 fallos; 92/92 mutaciones detectadas** (las de 2200 y las 11 de salud se volvieron a correr aparte tras el cambio de umbrales; el resto, en la corrida completa anterior).
+Estado actual: **1090 pruebas, 0 fallos; 112/112 mutaciones detectadas** (las de 2200, 2300 y las 11 de salud se corrieron aparte tras sus cambios; el resto, en la corrida completa anterior).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -102,3 +102,11 @@ Estado actual: **1004 pruebas, 0 fallos; 92/92 mutaciones detectadas** (las de 2
 ### 2200 · Aprobación de requisitos (separación de funciones)
 - Crear un requisito en un estado distinto de `proposed`, aprobarlo, rechazarlo, reabrirlo o devolverlo a propuesto exige `scope.review` (solo PM).
 - Con solo `scope.edit` (team_lead): registrar y editar requisitos en `proposed`, y mover uno ya aprobado entre `approved`, `implemented` y `verified`.
+
+### 2300 · Recursos (R3, parte 1)
+- **Recursos de la organización** (`resources`): personas o equipos, capacidad diaria en horas (por defecto 8, hasta 24), opcionalmente vinculados a un miembro interno activo (solo personas; un miembro, un recurso). Nombre único por organización sin distinguir mayúsculas. Se desactivan (`active = false`); no se borran si tienen asignaciones.
+- **Quién gestiona:** permiso `resource.manage` (owner, admin y project_manager de organización). **Quién ve:** cualquier miembro interno activo; los externos no ven recursos.
+- **Asignación** (`activity_resources`): una actividad puede tener varios recursos, cada uno con 1–100 % de dedicación; exige `schedule.edit` en el proyecto y un recurso activo. Es independiente del responsable de la actividad y **no mueve el cronograma**.
+- **Carga semanal** `resource_load(org, desde, hasta)`: horas por recurso y semana ISO = dedicación × capacidad diaria × días laborables del proyecto de cada actividad (calendario, feriados y días extra incluidos) dentro del rango; capacidad semanal = capacidad diaria × 5; sobreasignado si horas > capacidad. Máximo 372 días por consulta. Excluye proyectos en la papelera o cancelados y actividades sin fechas calculadas.
+- **Decisión de seguridad a revisar:** la función es `SECURITY DEFINER` y suma **todos** los proyectos de la organización, aunque quien consulta no pueda abrirlos, porque una sobreasignación solo es real con el total. Devuelve únicamente horas por recurso y semana, nunca nombres de proyectos ni actividades. Cualquier miembro interno puede consultarla.
+- **Fuera de este mínimo:** nivelación automática, costos, ausencias o calendarios por recurso, recursos de material.
