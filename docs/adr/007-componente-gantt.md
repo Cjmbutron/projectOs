@@ -64,3 +64,8 @@ externo; esta versión no cierra la decisión.
 - No se redimensiona (cambiar duración) ni se crean dependencias arrastrando: pendientes.
 - Los enlaces no se redibujan durante el arrastre (sí tras recalcular); no hay vista previa de impacto (`previewImpact`) todavía.
 - Comprobado en navegador con el componente real y las acciones simuladas (arrastre, teclado, Escape, arrastre de 0 días); **no** probado contra Supabase real.
+
+### Complemento (21-nov-2026): redimensionar barras
+- Arrastrar el **borde derecho** de una barra (o Mayús + flechas con la barra enfocada) cambia la **duración**, expresada en días laborables: el cliente cuenta los laborables entre el inicio y el nuevo fin con el calendario del proyecto (días de semana laborables, feriados y días extra) y guarda `activities.duration`; el motor recalcula las fechas. Los hitos no se redimensionan. Si el nuevo fin no cambia los días laborables (p. ej. cae en fin de semana), no se guarda nada.
+- Sigue pendiente la **vista previa de impacto** (`previewImpact`) y crear dependencias arrastrando.
+- Comprobado en Chromium con el componente real y acciones simuladas (redimensionado con puntero, con teclado, Escape, hito, sin cambio laborable); no contra Supabase real.

@@ -40,6 +40,9 @@ export function GanttChart({ layout, editable = false }: { layout: GanttLayout; 
             ) : (
               <rect x={b.x} y={b.y} width={b.width} height={b.height} rx={3} className={b.critical ? 'g-bar g-critical' : 'g-bar'} />
             )}
+            {editable && !b.milestone && (
+              <rect data-handle={b.id} x={b.x + b.width - 5} y={b.y} width={8} height={b.height} className="g-handle"><title>Arrastra para cambiar la duración</title></rect>
+            )}
             <text x={b.x + b.width + 6} y={b.y + b.height / 2 + 4} className="g-label">{b.label}</text>
           </g>
         ))}

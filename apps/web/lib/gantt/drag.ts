@@ -32,3 +32,31 @@ export function validateMoveDate(date: unknown): MoveCheck {
   if (t === null || t < Date.UTC(1900, 0, 1) || t > Date.UTC(2200, 11, 31)) return { ok: false, error: 'invalid_value' };
   return { ok: true, date: date as string };
 }
+
+export interface WorkCal { weekdays: number[]; holidays: ReadonlySet<string>; extraWorking: ReadonlySet<string> }
+export const DEFAULT_CAL: WorkCal = { weekdays: [1, 2, 3, 4, 5], holidays: new Set(), extraWorking: new Set() };
+
+/** Días laborables en [inicio, fin] ambos inclusive (mismo criterio que el motor y la base de datos). */
+export function workingDaysInclusive(startIso: string, finishIso: string, cal: WorkCal): number {
+  const s = parseIso(startIso), f = parseIso(finishIso);
+  if (s === null || f === null) throw new RangeError('fecha inválida');
+  if (f < s) return 0;
+  if ((f - s) / DAY > 36_600) throw new RangeError('rango demasiado grande');
+  let n = 0;
+  for (let t = s; t <= f; t += DAY) {
+    const d = new Date(t);
+    const iso = d.toISOString().slice(0, 10);
+    if (cal.extraWorking.has(iso) || (cal.weekdays.includes(d.getUTCDay()) && !cal.holidays.has(iso))) n++;
+  }
+  return n;
+}
+
+/** Duración (≥ 1 día laborable) que tendría una actividad que empieza en `start` si termina en `newFinish`. */
+export function durationForFinish(startIso: string, newFinishIso: string, cal: WorkCal): number {
+  return Math.max(1, workingDaysInclusive(startIso, newFinishIso, cal));
+}
+
+export type ResizeCheck = { ok: true; duration: number } | { ok: false; error: 'invalid_value' };
+export function validateDuration(v: unknown): ResizeCheck {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 36500 ? { ok: true, duration: v } : { ok: false, error: 'invalid_value' };
+}

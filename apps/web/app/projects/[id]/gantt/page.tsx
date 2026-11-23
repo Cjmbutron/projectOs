@@ -12,11 +12,17 @@ export default async function GanttPage({ params }: { params: Promise<{ id: stri
   const supabase = await createClient();
   const { data: project } = await supabase.from('projects').select('id,code,name').eq('id', id).maybeSingle();
   if (!project) notFound();
-  const [{ data: sched }, { data: acts }, { data: deps }] = await Promise.all([
-    supabase.from('project_schedules').select('schedule_version,computed_version,computed_start,computed_finish').eq('project_id', id).maybeSingle(),
+  const [{ data: sched }, { data: acts }, { data: deps }, { data: calDays }] = await Promise.all([
+    supabase.from('project_schedules').select('schedule_version,computed_version,computed_start,computed_finish,working_weekdays').eq('project_id', id).maybeSingle(),
     supabase.from('activities').select('id,name,duration,early_start,early_finish,is_critical').eq('project_id', id).order('sort_order').order('created_at'),
     supabase.from('activity_dependencies').select('predecessor_id,successor_id,type').eq('project_id', id),
+    supabase.from('project_calendar_days').select('day,kind').eq('project_id', id),
   ]);
+  const calendar = {
+    weekdays: (sched?.working_weekdays as number[] | null) ?? [1, 2, 3, 4, 5],
+    holidays: (calDays ?? []).filter((d) => d.kind === 'holiday').map((d) => d.day as string),
+    extraWorking: (calDays ?? []).filter((d) => d.kind === 'working').map((d) => d.day as string),
+  };
   const layout = layoutGantt(
     (acts ?? []).map((a) => ({ id: a.id, name: a.name, start: a.early_start, finish: a.early_finish, duration: a.duration, critical: a.is_critical === true })),
     (deps ?? []).map((d) => ({ predecessorId: d.predecessor_id, successorId: d.successor_id, type: d.type as DepType })),
@@ -41,10 +47,10 @@ export default async function GanttPage({ params }: { params: Promise<{ id: stri
           {canEdit === true ? (
             <>
               <p style={{ color: 'var(--muted)', fontSize: '.9rem' }}>
-                Arrastra una barra (o enfócala y usa las flechas) para fijar «no empezar antes de». Puede retrasar una actividad;
-                no puede adelantarla más allá de lo que permiten sus dependencias.
+                Arrastra una barra para fijar «no empezar antes de» (solo puede retrasar; las dependencias mandan) o su borde derecho para cambiar la duración.
+                Con teclado: enfoca la barra, flechas = mover, Mayús + flechas = duración, Enter guarda, Escape cancela.
               </p>
-              <GanttEditor layout={layout} projectId={id} />
+              <GanttEditor layout={layout} projectId={id} calendar={calendar} />
             </>
           ) : <GanttChart layout={layout} />}
           {layout.unscheduled.length > 0 && <p>{layout.unscheduled.length} actividad(es) sin fechas no se dibujan: recalcula el cronograma.</p>}

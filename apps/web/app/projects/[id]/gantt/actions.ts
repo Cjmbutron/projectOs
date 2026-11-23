@@ -1,6 +1,6 @@
 'use server';
 import { UUID_RE } from '@/lib/http';
-import { validateMoveDate } from '@/lib/gantt/drag';
+import { validateDuration, validateMoveDate } from '@/lib/gantt/drag';
 import { scopeErrorCode } from '@/lib/scope/wbs';
 import { createClient } from '@/lib/supabase/server';
 
@@ -25,4 +25,16 @@ export async function moveActivity(projectId: string, activityId: string, date: 
     organization_id: project.organization_id, project_id: projectId, activity_id: activityId, type: 'SNET', date: v.date,
   });
   return ins.error ? { ok: false, error: scopeErrorCode(ins.error) } : { ok: true };
+}
+
+/** Redimensionar una barra cambia la duración (en días laborables); el motor recalcula las fechas. */
+export async function resizeActivity(projectId: string, activityId: string, duration: number): Promise<MoveResult> {
+  if (!UUID_RE.test(projectId) || !UUID_RE.test(activityId)) return { ok: false, error: 'invalid_value' };
+  const v = validateDuration(duration);
+  if (!v.ok) return v;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('activities').update({ duration: v.duration })
+    .eq('project_id', projectId).eq('id', activityId).select('id');
+  if (error) return { ok: false, error: scopeErrorCode(error) };
+  return data && data.length > 0 ? { ok: true } : { ok: false, error: 'forbidden' };
 }
