@@ -25,7 +25,7 @@ export interface Bar { id: string; label: string; x: number; y: number; width: n
 export interface Link { key: string; points: [number, number][]; critical: boolean }
 export interface Tick { x: number; label: string; major: boolean }
 export interface GanttLayout {
-  width: number; height: number; headerHeight: number; rowHeight: number;
+  width: number; height: number; headerHeight: number; rowHeight: number; pxPerDay: number;
   bars: Bar[]; links: Link[]; ticks: Tick[]; weekends: { x: number; width: number }[];
   unscheduled: string[];
   minDate: string | null;
@@ -53,7 +53,7 @@ export function layoutGantt(
   const scheduled = activities.filter((a) => a.start && a.finish);
   const unscheduled = activities.filter((a) => !a.start || !a.finish).map((a) => a.id);
   if (scheduled.length === 0) {
-    return { width: 0, height: head, headerHeight: head, rowHeight: rowH, bars: [], links: [], ticks: [], weekends: [], unscheduled, minDate: null };
+    return { width: 0, height: head, headerHeight: head, rowHeight: rowH, pxPerDay: px, bars: [], links: [], ticks: [], weekends: [], unscheduled, minDate: null };
   }
 
   const first = Math.min(...scheduled.map((a) => epochDay(a.start!)));
@@ -120,7 +120,7 @@ export function layoutGantt(
   const width = Math.max(gridWidth, ...bars.map((b) => b.x + b.width + 6 + b.label.length * CHAR_W + 8));
 
   return {
-    width, height: head + scheduled.length * rowH + 8, headerHeight: head, rowHeight: rowH,
+    width, height: head + scheduled.length * rowH + 8, headerHeight: head, rowHeight: rowH, pxPerDay: px,
     bars, links, ticks, weekends, unscheduled, minDate: isoOf(origin),
   };
 }

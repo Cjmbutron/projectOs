@@ -1,7 +1,7 @@
 import { toPoints, type GanttLayout } from '@/lib/gantt/layout';
 
 /** Gantt de solo lectura (SVG en el servidor). Las fechas vienen del motor; aquí solo se dibujan. */
-export function GanttChart({ layout }: { layout: GanttLayout }) {
+export function GanttChart({ layout, editable = false }: { layout: GanttLayout; editable?: boolean }) {
   const { width, height, headerHeight: head, rowHeight: rowH, bars, links, ticks, weekends } = layout;
   if (bars.length === 0) return null;
   const critical = bars.filter((b) => b.critical).length;
@@ -32,7 +32,7 @@ export function GanttChart({ layout }: { layout: GanttLayout }) {
             className={l.critical ? 'g-link g-link-critical' : 'g-link'} />
         ))}
         {bars.map((b) => (
-          <g key={b.id}>
+          <g key={b.id} {...(editable ? { 'data-bar': b.id, tabIndex: 0, role: 'button', 'aria-label': `${b.label}, inicio ${b.start}. Flechas izquierda y derecha para mover un día, Enter para guardar, Escape para cancelar.`, className: 'g-draggable' } : {})}>
             <title>{`${b.label}: ${b.start}${b.milestone ? '' : ` → ${b.finish}`}${b.critical ? ' (ruta crítica)' : ''}`}</title>
             {b.milestone ? (
               <polygon points={`${b.x + b.width / 2},${b.y} ${b.x + b.width},${b.y + b.height / 2} ${b.x + b.width / 2},${b.y + b.height} ${b.x},${b.y + b.height / 2}`}

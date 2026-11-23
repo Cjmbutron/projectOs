@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { GanttChart } from '@/components/GanttChart';
+import { GanttEditor } from '@/components/GanttEditor';
 import { UUID_RE } from '@/lib/http';
 import { layoutGantt, type DepType } from '@/lib/gantt/layout';
 import { createClient } from '@/lib/supabase/server';
@@ -20,6 +21,7 @@ export default async function GanttPage({ params }: { params: Promise<{ id: stri
     (acts ?? []).map((a) => ({ id: a.id, name: a.name, start: a.early_start, finish: a.early_finish, duration: a.duration, critical: a.is_critical === true })),
     (deps ?? []).map((d) => ({ predecessorId: d.predecessor_id, successorId: d.successor_id, type: d.type as DepType })),
   );
+  const { data: canEdit } = await supabase.rpc('can_edit_schedule', { p_project: id });
   const stale = sched && sched.computed_version !== sched.schedule_version;
   return (
     <main style={{ maxWidth: 'none' }}>
@@ -36,7 +38,15 @@ export default async function GanttPage({ params }: { params: Promise<{ id: stri
             <span>◆ Hito</span>
             {sched?.computed_start && <span>Plan: {sched.computed_start} → {sched.computed_finish}</span>}
           </p>
-          <GanttChart layout={layout} />
+          {canEdit === true ? (
+            <>
+              <p style={{ color: 'var(--muted)', fontSize: '.9rem' }}>
+                Arrastra una barra (o enfócala y usa las flechas) para fijar «no empezar antes de». Puede retrasar una actividad;
+                no puede adelantarla más allá de lo que permiten sus dependencias.
+              </p>
+              <GanttEditor layout={layout} projectId={id} />
+            </>
+          ) : <GanttChart layout={layout} />}
           {layout.unscheduled.length > 0 && <p>{layout.unscheduled.length} actividad(es) sin fechas no se dibujan: recalcula el cronograma.</p>}
           <h2>Tabla</h2>
           <div className="card">

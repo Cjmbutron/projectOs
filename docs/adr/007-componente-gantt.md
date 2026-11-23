@@ -44,3 +44,23 @@ motor; del criterio 5: `role="img"` con descripción, `<title>` por barra y una 
 falta virtualización de filas), la edición por arrastre (criterio 2), la accesibilidad completa por teclado y el
 uso táctil. El spike sigue pendiente para decidir si la edición se construye sobre este Gantt o con un componente
 externo; esta versión no cierra la decisión.
+
+## Actualización (21-nov-2026): medición en navegador y arrastre sobre el Gantt propio
+
+**Medición** (Chromium sin interfaz de Playwright, una sola máquina de la nube con render por software; red de actividades en cadena con dependencias FS y 1 enlace por actividad; se mide con `requestAnimationFrame`):
+
+| Actividades | Nodos SVG | HTML (KB) | Layout (ms) | Render servidor (ms) | Carga hasta pintar (ms) | Scroll | Arrastre de 1 barra + 3 enlaces |
+|---|---|---|---|---|---|---|---|
+| 500 | 3 252 | 243 | 3,5 | 61 | 131 | 16,5 ms/cuadro | 16,6 ms/cuadro |
+| 2 000 | 12 966 | 994 | 7,5 | 144 | 153 | 16,6 ms/cuadro | 16,6 ms/cuadro |
+| 5 000 | 32 410 | 2 523 | 32 | 173 | 341 | 16,6 ms/cuadro | 16,5 ms/cuadro |
+
+(16,6 ms = 60 cuadros/s, el tope de la pantalla.) Quitar los nodos fuera de la vista (virtualización simulada: ≈ 7 600 nodos con 5 000 actividades) no cambió los cuadros por segundo en esta máquina.
+
+**Lectura honesta:** con 5 000 actividades el Gantt SVG propio se desplaza y arrastra a 60 cuadros/s **en esta máquina**; el HTML de 2,5 MB y la carga de 341 ms sí son el costo visible. **No** se midió en un portátil modesto, en móvil ni con el navegador real (extensiones, otras pestañas), y el arrastre medido muta solo la barra y 3 enlaces, no recalcula todo. Para el MVP (RNF-03/04) no se justifica todavía virtualizar ni cambiar de componente; **volver a medir en el equipo más lento de los usuarios** antes de decidir R3.
+
+**Decisión de este avance:** se construye la edición sobre el Gantt propio (no se evaluaron componentes externos). Arrastrar una barra —con puntero o con flechas + Enter— fija la restricción **«no empezar antes de» (SNET)** de la actividad con la fecha de destino y dispara el recálculo del motor. Consecuencias que se asumen:
+- Solo puede **retrasar**; no adelanta una actividad más allá de lo que permiten sus dependencias (el motor manda).
+- No se redimensiona (cambiar duración) ni se crean dependencias arrastrando: pendientes.
+- Los enlaces no se redibujan durante el arrastre (sí tras recalcular); no hay vista previa de impacto (`previewImpact`) todavía.
+- Comprobado en navegador con el componente real y las acciones simuladas (arrastre, teclado, Escape, arrastre de 0 días); **no** probado contra Supabase real.
