@@ -23,7 +23,7 @@ export default async function Resources({ searchParams }: { searchParams: Promis
   const manage = canManage === true;
   return (
     <main>
-      <p><Link href="/projects">← Proyectos</Link></p>
+      <p className="row"><Link href="/projects">← Proyectos</Link><Link href="/resources/load">Carga semanal →</Link></p>
       <h1>Recursos — {org.name}</h1>
       {sp.error && <p className="err" role="alert">{messageFor(sp.error)}</p>}
       <div className="card">
