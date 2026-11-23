@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { HEALTH_BADGE, HEALTH_LABEL, isHealth, parseThresholds, summarizeHealth } from '@/lib/health';
 import { messageFor } from '@/lib/errors';
+import { countOverdue, projectKpis } from '@/lib/kpis';
 import { createClient } from '@/lib/supabase/server';
 
 async function createProject(formData: FormData) {
@@ -41,22 +42,33 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   if (!orgs || orgs.length === 0) redirect('/onboarding');
   const { data: projects } = await supabase
     .from('projects').select('id,code,name,status,health,progress_percent,organization_id').is('deleted_at', null).order('code');
+  const { data: auth } = await supabase.auth.getUser();
+  const todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: process.env.APP_TIMEZONE || 'America/La_Paz' }).format(new Date());
+  let overdueMine: number | null = null;
+  if (auth.user) {
+    const { data: mine } = await supabase.from('activities').select('early_finish,status').eq('assignee_id', auth.user.id).neq('status', 'done').limit(1000);
+    overdueMine = countOverdue(mine ?? [], todayIso);
+  }
+  const kpis = projectKpis(projects ?? [], overdueMine);
   return (
     <main>
       <h1>Proyectos — {orgs[0].name}</h1>
-      {projects && projects.length > 0 && (() => {
-        const sum = summarizeHealth(projects);
-        return (
-          <div className="card" aria-label="Resumen de salud de los proyectos">
-            <p className="legend">
-              <strong>{sum.total} proyecto(s)</strong>
-              {(['green', 'amber', 'red', 'unknown'] as const).map((h) => (
-                <span key={h} className={HEALTH_BADGE[h]}>{HEALTH_LABEL[h]}: {sum.counts[h]}</span>
-              ))}
-            </p>
+      <section className="kpis" aria-label="Indicadores">
+        {kpis.map((k) => (
+          <div key={k.key} className={`kpi kpi-${k.tone}`}>
+            <span className="kpi-label">{k.label}</span>
+            <span className="kpi-value">{k.value}</span>
+            <span className="kpi-hint">{k.hint}</span>
           </div>
-        );
-      })()}
+        ))}
+      </section>
+      {projects && projects.length > 0 && (
+        <p className="legend">
+          {(['green', 'amber', 'red', 'unknown'] as const).map((h) => (
+            <span key={h} className={HEALTH_BADGE[h]}>{HEALTH_LABEL[h]}: {summarizeHealth(projects).counts[h]}</span>
+          ))}
+        </p>
+      )}
       <div className="card">
         {projects && projects.length > 0 ? (
           <table><thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th>Salud</th><th>Avance</th></tr></thead>

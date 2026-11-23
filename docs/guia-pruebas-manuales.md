@@ -1,4 +1,4 @@
-# Guía de pruebas manuales (entregas 10 a 32)
+# Guía de pruebas manuales (entregas 10 a 33)
 
 Para probar en **tu Supabase real** lo que hasta ahora solo se probó con un reemplazo local. Marca cada punto y
 anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige rápido.
@@ -31,6 +31,8 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] Insignias de salud con texto (Verde/Ámbar/Rojo/Sin datos) legibles sobre el fondo oscuro.
 - [ ] El Gantt se ve bien: barras, ruta crítica en rojo, dependencias, fines de semana y la barra seleccionada.
 - [ ] Formularios: los campos se distinguen del fondo y el foco con teclado se ve (Tab).
+- [ ] (Entrega 33) En `/projects`: tarjetas de Proyectos, En riesgo, Avance medio y Mis actividades vencidas; las cifras coinciden con la lista y con «Mis actividades».
+- [ ] Mensajes de error y de éxito en recuadros; tablas con botones alineados; en móvil las tablas se desplazan lateralmente y ya no ocultan columnas.
 - [ ] Anota cualquier texto ilegible, color que no se distinga o pantalla que se vea «sin estilo».
 
 ## 2. Charter, línea base, salud, requisitos (entregas 11–14)
