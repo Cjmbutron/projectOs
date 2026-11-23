@@ -267,6 +267,43 @@ mutate "stakeholders: escritura abierta" 2000_project_charter.sql \
   with check (private.has_project_permission(project_id, 'project.update'));" "create policy stakeholders_insert on public.project_stakeholders for insert to authenticated
   with check (true);"
 
+mutate "salud: verde exige atraso estrictamente menor" 2100_project_health.sql \
+  "when v_variance <= v_amber then 'green'" "when v_variance < v_amber then 'green'"
+mutate "salud: el límite rojo es exclusivo" 2100_project_health.sql \
+  "when v_variance <= v_red then 'amber'" "when v_variance < v_red then 'amber'"
+mutate "salud: usa la PRIMERA línea base" 2100_project_health.sql \
+  "order by b.version desc limit 1;" "order by b.version asc limit 1;"
+mutate "salud: ignora feriados" 2100_project_health.sql \
+  "         and not exists (select 1 from public.project_calendar_days c where c.project_id = p_project and c.day = g.day::date and c.kind = 'holiday'));" "         );"
+mutate "salud: ignora días laborables extra" 2100_project_health.sql \
+  "where exists (select 1 from public.project_calendar_days c where c.project_id = p_project and c.day = g.day::date and c.kind = 'working')
+     or (" "where ("
+mutate "salud: pierde el signo del atraso" 2100_project_health.sql \
+  "return case when p_to >= p_from then v_n else -v_n end;" "return v_n;"
+mutate "salud: no se recalcula al cambiar umbrales" 2100_project_health.sql \
+  "create trigger organizations_health after update of health_amber_days, health_red_days on public.organizations
+  for each row execute function private.health_after_thresholds();" "select 1;"
+mutate "salud: no se recalcula al crear la línea base" 2100_project_health.sql \
+  "create trigger baselines_health after insert on public.baselines
+  for each row execute function private.health_after_baseline();" "select 1;"
+mutate "salud: no se recalcula al calcular fechas" 2100_project_health.sql \
+  "create trigger project_schedules_health after insert or update of computed_finish on public.project_schedules
+  for each row execute function private.health_after_schedule();" "select 1;"
+mutate "salud: umbrales incoherentes permitidos" 2100_project_health.sql \
+  "add constraint organizations_health_thresholds check (health_red_days >= health_amber_days);" "add constraint organizations_health_thresholds check (true);"
+mutate "salud: sin línea base se calcula igual" 2100_project_health.sql \
+  "if v_finish is not null and v_base_finish is not null then" "if v_finish is not null then"
+
+mutate "requisitos: crear con estado distinto de propuesto sin scope.review" 2200_requirements_review.sql \
+  "v_gated := new.status <> 'proposed';" "v_gated := false;"
+mutate "requisitos: cambiar estado no exige scope.review" 2200_requirements_review.sql \
+  "v_gated := new.status <> old.status" "v_gated := false and new.status <> old.status"
+mutate "requisitos: desde propuesto se salta a implementado" 2200_requirements_review.sql \
+  "old.status in ('approved', 'implemented', 'verified') and new.status" "old.status in ('proposed', 'rejected', 'approved', 'implemented', 'verified') and new.status"
+mutate "requisitos: avanzar uno aprobado también exige scope.review" 2200_requirements_review.sql \
+  "and not (old.status in ('approved', 'implemented', 'verified') and new.status in ('approved', 'implemented', 'verified'));" ";"
+mutate "requisitos: el permiso no se comprueba" 2200_requirements_review.sql \
+  "if v_gated and not private.has_project_permission(new.project_id, 'scope.review') then" "if false then"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **959 pruebas, 0 fallos; 76/76 mutaciones detectadas.**
+Estado actual: **1004 pruebas, 0 fallos; 92/92 mutaciones detectadas** (las de 2200 y las 11 de salud se volvieron a correr aparte tras el cambio de umbrales; el resto, en la corrida completa anterior).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -85,10 +85,20 @@ Estado actual: **959 pruebas, 0 fallos; 76/76 mutaciones detectadas.**
 - `requirement_deliverables`: vínculo requisito ↔ entregable del mismo proyecto.
 - `activities.wbs_node_id`: vincula una actividad con un nodo de la WBS.
 - Vista `requirement_traceability` (security_invoker): entregables, entregables aceptados y actividades alcanzadas vía nodo de la WBS por requisito.
-- Escritura con `scope.edit` (PM y team_lead). Aprobar requisitos aún no exige una función aparte: si lo necesitas, se agrega `scope.review` como en los entregables.
+- Escritura con `scope.edit` (PM y team_lead). Aprobar/rechazar requisitos exige `scope.review` desde la migración 2200.
 
 ### 2000 · Project Charter y stakeholders (US-014)
 - `project_charters` (objetivos, alcance, fuera de alcance, criterios de éxito, supuestos, restricciones) y `project_stakeholders` (nombre, rol, influencia, interés, usuario interno opcional).
 - **Compuerta:** `draft → proposed` exige objetivos y alcance (≥ 10 caracteres cada uno) y ≥ 1 stakeholder; la impone un disparador sobre `projects`, así que no se puede saltar con un UPDATE directo. `charter_status(proyecto)` informa qué falta.
 - El charter se edita solo en `draft`/`proposed` (`charter_locked` después); los stakeholders se editan mientras el proyecto no esté cerrado o cancelado.
 - Escritura con `project.update` (PM). Nota para las pruebas: `support/01_harness.sql` crea un charter completo automáticamente en cada proyecto de prueba, salvo con `set t.no_auto_charter = 'on'` (código solo de pruebas).
+
+### 2100 · Salud del proyecto (US-020)
+- `projects.health` (`green`/`amber`/`red`/`unknown`) lo calcula solo la base de datos; nadie puede escribirlo (42501).
+- Regla: atraso del fin calculado (`project_schedules.computed_finish`) respecto del `project_finish` de la **última** línea base, en **días laborables** del proyecto (calendario y feriados/excepciones incluidos). Verde si atraso ≤ umbral ámbar, ámbar si ≤ umbral rojo, rojo si mayor; adelantos cuentan como verde. Sin línea base o sin fecha calculada: `unknown`.
+- Umbrales por organización: `organizations.health_amber_days` (2) y `health_red_days` (5), con rojo ≥ ámbar, 0–3650; los cambia owner/admin y se recalculan todos los proyectos. Valores por defecto confirmados por el usuario.
+- Se recalcula al aplicar un cálculo de cronograma, crear una línea base o cambiar los umbrales.
+
+### 2200 · Aprobación de requisitos (separación de funciones)
+- Crear un requisito en un estado distinto de `proposed`, aprobarlo, rechazarlo, reabrirlo o devolverlo a propuesto exige `scope.review` (solo PM).
+- Con solo `scope.edit` (team_lead): registrar y editar requisitos en `proposed`, y mover uno ya aprobado entre `approved`, `implemented` y `verified`.

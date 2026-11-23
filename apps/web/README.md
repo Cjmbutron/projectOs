@@ -18,3 +18,6 @@ Predecesoras: `1|3SS+2|4FF-1` → tipo opcional (FS por defecto) y desfase opcio
 
 ## Project Charter (US-014)
 `/projects/:id/charter`: charter, stakeholders y botones de estado (someter a aprobación, aprobar, devolver a borrador). La base de datos impone la compuerta: sin objetivos, alcance y un stakeholder no se puede someter.
+
+## Líneas base (US-024)
+`/projects/:id/baseline`: crear una línea base (solo si el cronograma está calculado y vigente; el PM) y compararla con el cronograma actual: variación de inicio, fin y duración por actividad en días laborables del calendario del proyecto, más la variación del fin del proyecto. `lib/baseline/compare.ts` produce el mismo resultado que `compareToBaseline` del motor (hay una prueba de paridad) y además reporta actividades eliminadas con su nombre guardado.

@@ -54,7 +54,7 @@ export function scopeErrorCode(error: { message?: string; code?: string } | null
   if (!error) return '';
   const first = (error.message ?? '').split('\n')[0].trim();
   const known = ['wbs_has_children', 'wbs_cycle', 'wbs_too_deep', 'wbs_too_large', 'wbs_node_not_found', 'project_read_only', 'forbidden', 'requirement_needs_deliverable',
-    'charter_incomplete', 'charter_locked', 'stakeholder_not_member', 'invalid_transition', 'project_not_found'];
+    'charter_incomplete', 'charter_locked', 'stakeholder_not_member', 'invalid_transition', 'project_not_found', 'schedule_not_current'];
   if (known.includes(first)) return first;
   if (error.code === '42501') return 'forbidden';
   if (error.code === '23514') return 'invalid_value';

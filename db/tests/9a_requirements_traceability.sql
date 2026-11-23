@@ -87,6 +87,20 @@ begin
   -- ---- Permisos ----
   perform t.as_user('auditor_a');  -- team_lead: scope.edit
   perform t.lives('team_lead registra requisitos', format('insert into public.requirements (organization_id, project_id, description, source) values (%L, %L, ''TL'', ''x'')', v_org, v_p));
+  -- Separación de funciones: aprobar/rechazar es del PM (scope.review)
+  perform t.throws('team_lead no crea requisitos ya aprobados', format('insert into public.requirements (organization_id, project_id, description, source, status) values (%L, %L, ''x'', ''y'', ''rejected'')', v_org, v_p), '42501');
+  perform t.throws('team_lead no aprueba', format('update public.requirements set status = ''approved'' where id = %L', v_r2), '42501');
+  perform t.throws('team_lead no rechaza (propuesto → rechazado)', format('update public.requirements set status = ''rejected'' where project_id = %L and description = ''TL''', v_p), '42501');
+  perform t.throws('team_lead no reabre un rechazado', format('update public.requirements set status = ''proposed'' where id = %L', v_r2), '42501');
+  perform t.throws('team_lead no salta de propuesto a implementado', format('update public.requirements set status = ''implemented'' where id = %L', v_r2), '42501');
+  perform t.eq('v_r1 sigue verificado (precondición)', (select status from public.requirements where id = v_r1), 'verified');
+  perform t.throws('team_lead no devuelve un aprobado a propuesto', format('update public.requirements set status = ''proposed'' where id = %L', v_r1), '42501');
+  perform t.lives('team_lead sí avanza uno aprobado (verified → implemented)', format('update public.requirements set status = ''implemented'' where id = %L', v_r1));
+  perform t.lives('team_lead edita la descripción sin tocar el estado', format('update public.requirements set description = ''Descripción ajustada'' where id = %L', v_r2));
+  perform t.as_user('pm_a');
+  perform t.lives('el PM sí rechaza', format('update public.requirements set status = ''rejected'' where project_id = %L and description = ''TL''', v_p));
+  perform t.lives('el PM sí devuelve a propuesto', format('update public.requirements set status = ''proposed'' where id = %L', v_r2));
+  perform t.lives('el PM restaura verified', format('update public.requirements set status = ''verified'' where id = %L', v_r1));
   perform t.as_user('member_a');
   perform t.eq('contributor ve requisitos', t.count_of(format('select 1 from public.requirements where project_id = %L', v_p)) > 0, true);
   perform t.eq('contributor ve la cobertura', t.count_of(format('select 1 from public.requirement_traceability where project_id = %L', v_p)) > 0, true);

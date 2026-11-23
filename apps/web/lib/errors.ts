@@ -23,6 +23,8 @@ const MESSAGES: Record<string, string> = {
   charter_locked: 'El charter ya no se edita: el proyecto fue aprobado.',
   stakeholder_not_member: 'Ese usuario no pertenece a la organización.',
   invalid_transition: 'Ese cambio de estado no está permitido.',
+  schedule_not_current: 'El cronograma cambió desde el último cálculo. Recalcula antes de crear la línea base.',
+  invalid_thresholds: 'Los umbrales deben ser enteros de 0 a 3650 y el rojo no puede ser menor que el ámbar.',
   invalid_credentials: 'Correo o contraseña incorrectos.',
   account_locked: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
   email_not_confirmed: 'Confirma tu correo con el enlace que te enviamos.',

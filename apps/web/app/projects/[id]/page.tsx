@@ -79,7 +79,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
     <main>
       <p><Link href="/projects">← Proyectos</Link></p>
       <h1>{project.code} · {project.name}</h1>
-      <p><Link href={`/projects/${id}/charter`}>Charter →</Link> · <Link href={`/projects/${id}/gantt`}>Gantt →</Link> · <Link href={`/projects/${id}/wbs`}>WBS y entregables →</Link> · <Link href={`/projects/${id}/requirements`}>Requisitos y trazabilidad →</Link></p>
+      <p><Link href={`/projects/${id}/charter`}>Charter →</Link> · <Link href={`/projects/${id}/gantt`}>Gantt →</Link> · <Link href={`/projects/${id}/baseline`}>Líneas base →</Link> · <Link href={`/projects/${id}/wbs`}>WBS y entregables →</Link> · <Link href={`/projects/${id}/requirements`}>Requisitos y trazabilidad →</Link></p>
       {sp.error && <p className="err" role="alert">{messageFor(sp.error === '42501' ? 'forbidden' : sp.error)}</p>}
       <div className="card">
         <form action={setStart} className="row">

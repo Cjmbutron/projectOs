@@ -92,6 +92,7 @@ export default async function RequirementsPage({ params, searchParams }: { param
       <p><Link href={`/projects/${id}`}>← {project.code} · {project.name}</Link> · <Link href={`/projects/${id}/wbs`}>WBS y entregables</Link></p>
       <h1>Requisitos y trazabilidad</h1>
       {sp.error && <p className="err" role="alert">{messageFor(sp.error)}</p>}
+      <p style={{ color: 'var(--muted)', fontSize: '.9rem' }}>Aprobar, rechazar o reabrir un requisito lo hace el PM; el equipo líder registra y hace avanzar los ya aprobados.</p>
       <p>{total === 0 ? 'Sin requisitos.' : `${covered} de ${total} requisitos tienen al menos un entregable.`}</p>
       {(reqs ?? []).map((r) => {
         const mine = (links ?? []).filter((l) => l.requirement_id === r.requirement_id);
