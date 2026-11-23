@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **1090 pruebas, 0 fallos; 112/112 mutaciones detectadas** (las de 2200, 2300 y las 11 de salud se corrieron aparte tras sus cambios; el resto, en la corrida completa anterior).
+Estado actual: **1101 pruebas, 0 fallos; 114/114 mutaciones detectadas** (112 en la corrida completa tras la 2300; las 2 de la 2400 se corrieron aparte).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -110,3 +110,6 @@ Estado actual: **1090 pruebas, 0 fallos; 112/112 mutaciones detectadas** (las de
 - **Carga semanal** `resource_load(org, desde, hasta)`: horas por recurso y semana ISO = dedicación × capacidad diaria × días laborables del proyecto de cada actividad (calendario, feriados y días extra incluidos) dentro del rango; capacidad semanal = capacidad diaria × 5; sobreasignado si horas > capacidad. Máximo 372 días por consulta. Excluye proyectos en la papelera o cancelados y actividades sin fechas calculadas.
 - **Decisión de seguridad a revisar:** la función es `SECURITY DEFINER` y suma **todos** los proyectos de la organización, aunque quien consulta no pueda abrirlos, porque una sobreasignación solo es real con el total. Devuelve únicamente horas por recurso y semana, nunca nombres de proyectos ni actividades. Cualquier miembro interno puede consultarla.
 - **Fuera de este mínimo:** nivelación automática, costos, ausencias o calendarios por recurso, recursos de material.
+
+### 2400 · ¿Puede gestionar recursos?
+`can_manage_resources(org)`: devuelve verdadero para quien tiene `resource.manage`. Solo sirve para mostrar u ocultar formularios; la autorización real es la RLS de `resources`.

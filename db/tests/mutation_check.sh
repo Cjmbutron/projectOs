@@ -352,6 +352,10 @@ mutate "recursos: la carga no suma otros proyectos" 2300_resources.sql \
   "where ar.organization_id = p_org
       and p.deleted_at" "where ar.organization_id = p_org and private.can_read_project(ar.project_id)
       and p.deleted_at"
+mutate "recursos: can_manage_resources siempre verdadero" 2400_can_manage_resources.sql \
+  "select coalesce(private.has_org_permission(p_org, 'resource.manage'), false)" "select true"
+mutate "recursos: can_manage_resources con otro permiso" 2400_can_manage_resources.sql \
+  "private.has_org_permission(p_org, 'resource.manage')" "private.has_org_permission(p_org, 'project.create')"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

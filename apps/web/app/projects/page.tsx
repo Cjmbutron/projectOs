@@ -44,7 +44,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
     .from('projects').select('id,code,name,status,health,progress_percent,organization_id').is('deleted_at', null).order('code');
   return (
     <main>
-      <div className="row"><h1>Proyectos — {orgs[0].name}</h1><Link href="/mis-actividades">Mis actividades</Link> <LogoutButton /></div>
+      <div className="row"><h1>Proyectos — {orgs[0].name}</h1><Link href="/mis-actividades">Mis actividades</Link> <Link href="/resources">Recursos</Link> <LogoutButton /></div>
       {projects && projects.length > 0 && (() => {
         const sum = summarizeHealth(projects);
         return (

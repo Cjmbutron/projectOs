@@ -4,6 +4,7 @@ import { ImportCsv, RecalcButton } from '@/components';
 import { messageFor } from '@/lib/errors';
 import { UUID_RE } from '@/lib/http';
 import { canReportProgress, parseProgress, progressErrorCode, STATUS_LABEL } from '@/lib/progress';
+import { formatHours, parseAssignForm, resourceErrorCode } from '@/lib/resources';
 import { parseDependencyForm } from '@/lib/schedule/dependency-form';
 import { createClient } from '@/lib/supabase/server';
 
@@ -61,6 +62,33 @@ async function addDependency(formData: FormData) {
   redirect(`/projects/${project}${code ? `?error=${code}` : ''}`);
 }
 
+async function assignResource(formData: FormData) {
+  'use server';
+  const project = String(formData.get('project'));
+  if (!UUID_RE.test(project)) redirect('/projects');
+  const a = parseAssignForm(formData);
+  if (!a.ok) redirect(`/projects/${project}?error=${a.error}`);
+  const v = a as Extract<typeof a, { ok: true }>;
+  const supabase = await createClient();
+  const { data: p } = await supabase.from('projects').select('organization_id').eq('id', project).maybeSingle();
+  if (!p) redirect('/projects');
+  const { error } = await supabase.from('activity_resources').insert({
+    organization_id: p.organization_id, project_id: project, activity_id: v.activityId, resource_id: v.resourceId, allocation_percent: v.percent,
+  });
+  const code = resourceErrorCode(error, 'assignment');
+  redirect(`/projects/${project}${code ? `?error=${code}` : ''}`);
+}
+
+async function unassignResource(formData: FormData) {
+  'use server';
+  const project = String(formData.get('project'));
+  const id = String(formData.get('id'));
+  if (!UUID_RE.test(project) || !UUID_RE.test(id)) redirect('/projects');
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('activity_resources').delete().eq('id', id).eq('project_id', project).select('id');
+  redirect(`/projects/${project}${error || !data?.length ? '?error=forbidden' : ''}`);
+}
+
 async function removeDependency(formData: FormData) {
   'use server';
   const project = String(formData.get('project'));
@@ -90,6 +118,11 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const me = userData.user?.id ?? null;
   const nodeCode = new Map((nodes ?? []).map((n) => [n.id, n.code]));
   const nameOf = new Map((acts ?? []).map((a) => [a.id, a.name]));
+  const [{ data: assigns }, { data: resList }] = await Promise.all([
+    supabase.from('activity_resources').select('id,activity_id,resource_id,allocation_percent').eq('project_id', id).order('created_at'),
+    supabase.from('resources').select('id,name,daily_hours,active').order('name'),
+  ]);
+  const resName = new Map((resList ?? []).map((r) => [r.id, r.name]));
   const stale = sched && sched.computed_version !== sched.schedule_version;
   return (
     <main>
@@ -130,6 +163,32 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
               </td></tr>
           ))}</tbody></table>
         {(acts ?? []).length === 0 && <p>Sin actividades.</p>}
+      </div>
+      <div className="card">
+        <h2>Recursos asignados</h2>
+        {(assigns ?? []).length === 0 ? <p>Sin recursos asignados.</p> : (
+          <table><thead><tr><th>Actividad</th><th>Recurso</th><th>Dedicación</th>{canEditData === true && <th></th>}</tr></thead>
+            <tbody>{(assigns ?? []).map((x) => (
+              <tr key={x.id}><td>{nameOf.get(x.activity_id)}</td><td>{resName.get(x.resource_id) ?? '—'}</td><td>{x.allocation_percent} %</td>
+                {canEditData === true && (
+                  <td><form action={unassignResource}><input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={x.id} />
+                    <button className="secondary" style={{ marginTop: 0 }}>Quitar</button></form></td>
+                )}</tr>
+            ))}</tbody></table>
+        )}
+        {canEditData === true && (acts ?? []).length > 0 && (resList ?? []).some((r) => r.active) && (
+          <form action={assignResource}>
+            <input type="hidden" name="project" value={id} />
+            <label htmlFor="as-activity">Actividad</label>
+            <select id="as-activity" name="activity" required>{(acts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+            <label htmlFor="as-resource">Recurso</label>
+            <select id="as-resource" name="resource" required>{(resList ?? []).filter((r) => r.active).map((r) => <option key={r.id} value={r.id}>{r.name} ({formatHours(Number(r.daily_hours))}/día)</option>)}</select>
+            <label htmlFor="as-percent">Dedicación (% de su jornada, 1 a 100)</label>
+            <input id="as-percent" name="percent" type="number" min={1} max={100} step={1} defaultValue={100} required />
+            <button>Asignar recurso</button>
+          </form>
+        )}
+        {canEditData === true && (resList ?? []).filter((r) => r.active).length === 0 && <p style={{ color: 'var(--muted)' }}>No hay recursos activos. <Link href="/resources">Crear recursos</Link></p>}
       </div>
       <div className="card">
         <h2>Dependencias</h2>
