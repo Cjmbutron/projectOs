@@ -53,7 +53,7 @@ export default async function LoadPage({ searchParams }: { searchParams: Promise
           </table>
         )}
       </div>
-      <p style={{ color: 'var(--muted)' }}>Horas = dedicación × horas por día × días laborables del proyecto en la semana. Capacidad = horas por día × 5.</p>
+      <p style={{ color: 'var(--muted)' }}>Horas = dedicación × horas por día × días laborables del proyecto en la semana. Capacidad = horas por día × (5 − días hábiles de ausencia de esa semana).</p>
     </main>
   );
 }

@@ -326,32 +326,52 @@ mutate "recursos: asignar sin schedule.edit" 2300_resources.sql \
   "create policy activity_resources_insert on public.activity_resources for insert to authenticated
   with check (private.has_project_permission(project_id, 'schedule.edit'));" "create policy activity_resources_insert on public.activity_resources for insert to authenticated
   with check (private.can_read_project(project_id));"
-mutate "recursos: la carga la consulta cualquiera" 2300_resources.sql \
+mutate "recursos: la carga la consulta cualquiera" 2500_resource_absences.sql \
   "if not private.is_internal_member(p_org) then" "if false then"
-mutate "recursos: la carga ignora feriados" 2300_resources.sql \
+mutate "recursos: la carga ignora feriados" 2500_resource_absences.sql \
   "               and not exists (select 1 from public.project_calendar_days c where c.project_id = ar.project_id and c.day = g.day::date and c.kind = 'holiday')))" "               ))"
-mutate "recursos: la carga ignora días laborables extra" 2300_resources.sql \
+mutate "recursos: la carga ignora días laborables extra" 2500_resource_absences.sql \
   "(exists (select 1 from public.project_calendar_days c where c.project_id = ar.project_id and c.day = g.day::date and c.kind = 'working')
            or" "(false
            or"
-mutate "recursos: la carga cuenta proyectos en la papelera" 2300_resources.sql \
+mutate "recursos: la carga cuenta proyectos en la papelera" 2500_resource_absences.sql \
   "p.deleted_at is null and p.status <> 'cancelled'" "p.status <> 'cancelled'"
-mutate "recursos: la carga cuenta proyectos cancelados" 2300_resources.sql \
+mutate "recursos: la carga cuenta proyectos cancelados" 2500_resource_absences.sql \
   "p.deleted_at is null and p.status <> 'cancelled'" "p.deleted_at is null"
-mutate "recursos: la carga no recorta por el rango" 2300_resources.sql \
+mutate "recursos: la carga no recorta por el rango" 2500_resource_absences.sql \
   "generate_series(greatest(a.early_start, p_from), least(a.early_finish, p_to)" "generate_series(a.early_start, a.early_finish"
-mutate "recursos: la capacidad semanal es de 4 días" 2300_resources.sql \
-  "round(w.daily_hours * 5, 2), (round(w.h, 2) > round(w.daily_hours * 5, 2))" "round(w.daily_hours * 4, 2), (round(w.h, 2) > round(w.daily_hours * 4, 2))"
-mutate "recursos: sobreasignado con exactamente la capacidad" 2300_resources.sql \
-  "(round(w.h, 2) > round(w.daily_hours * 5, 2))" "(round(w.h, 2) >= round(w.daily_hours * 5, 2))"
-mutate "recursos: la carga ignora el porcentaje de dedicación" 2300_resources.sql \
+mutate "recursos: la capacidad semanal es de 4 días" 2500_resource_absences.sql \
+  "(5 - coalesce(ab.n, 0)), 2),
+         (round(w.h, 2) > round(w.daily_hours * (5 - coalesce(ab.n, 0)), 2))" "(4 - coalesce(ab.n, 0)), 2),
+         (round(w.h, 2) > round(w.daily_hours * (4 - coalesce(ab.n, 0)), 2))"
+mutate "recursos: sobreasignado con exactamente la capacidad" 2500_resource_absences.sql \
+  "(round(w.h, 2) > round(w.daily_hours * (5 - coalesce(ab.n, 0)), 2))" "(round(w.h, 2) >= round(w.daily_hours * (5 - coalesce(ab.n, 0)), 2))"
+mutate "recursos: la carga ignora el porcentaje de dedicación" 2500_resource_absences.sql \
   "sum(d.allocation_percent / 100.0 * d.daily_hours)" "sum(d.daily_hours)"
-mutate "recursos: rango máximo de 373 días" 2300_resources.sql \
+mutate "recursos: rango máximo de 373 días" 2500_resource_absences.sql \
   "if p_to - p_from > 372 then" "if p_to - p_from > 373 then"
-mutate "recursos: la carga no suma otros proyectos" 2300_resources.sql \
+mutate "recursos: la carga no suma otros proyectos" 2500_resource_absences.sql \
   "where ar.organization_id = p_org
       and p.deleted_at" "where ar.organization_id = p_org and private.can_read_project(ar.project_id)
       and p.deleted_at"
+mutate "ausencias: la capacidad ignora las ausencias" 2500_resource_absences.sql \
+  "left join absent ab on ab.rid = w.rid and ab.wk = w.wk" "left join absent ab on false"
+mutate "ausencias: una ausencia cuenta los fines de semana" 2500_resource_absences.sql \
+  "least(ab.end_date, wk0.wk + 4)" "least(ab.end_date, wk0.wk + 6)"
+mutate "ausencias: las ausencias solapadas se suman dos veces" 2500_resource_absences.sql \
+  "select distinct ab.resource_id as rid, g.day::date as day" "select ab.resource_id as rid, g.day::date as day"
+mutate "ausencias: no se recorta al inicio de la semana" 2500_resource_absences.sql \
+  "greatest(ab.start_date, wk0.wk)" "ab.start_date"
+mutate "ausencias: registrar sin resource.manage" 2500_resource_absences.sql \
+  "create policy resource_absences_insert on public.resource_absences for insert to authenticated
+  with check (private.has_org_permission(organization_id, 'resource.manage'));" "create policy resource_absences_insert on public.resource_absences for insert to authenticated
+  with check (private.is_internal_member(organization_id));"
+mutate "ausencias: un externo ve las ausencias" 2500_resource_absences.sql \
+  "using (private.is_internal_member(organization_id));" "using (private.can_access_org(organization_id));"
+mutate "ausencias: sin límite de 365 días" 2500_resource_absences.sql \
+  "check (end_date - start_date <= 365)," "check (end_date - start_date <= 4000),"
+mutate "ausencias: el fin puede ser anterior al inicio" 2500_resource_absences.sql \
+  "check (end_date >= start_date)," "check (true),"
 mutate "recursos: can_manage_resources siempre verdadero" 2400_can_manage_resources.sql \
   "select coalesce(private.has_org_permission(p_org, 'resource.manage'), false)" "select true"
 mutate "recursos: can_manage_resources con otro permiso" 2400_can_manage_resources.sql \

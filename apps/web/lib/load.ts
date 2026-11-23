@@ -49,7 +49,8 @@ const num = (n: number) => (Number.isInteger(n) ? String(n) : String(n).replace(
 /** Texto de una celda; el estado va en palabras, no solo en color. */
 export function cellLabel(c: Cell | null): string {
   if (!c) return '—';
-  return `${num(c.hours)} / ${num(c.capacity)} h · ${c.pct} %${c.over ? ' · Sobreasignado' : ''}`;
+  const pct = c.capacity > 0 ? `${c.pct} %` : 'sin capacidad';
+  return `${num(c.hours)} / ${num(c.capacity)} h · ${pct}${c.over ? ' · Sobreasignado' : ''}`;
 }
 
 /** «2 mar» a partir de una fecha ISO. */

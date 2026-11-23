@@ -80,6 +80,7 @@ describe('cellLabel / shortDate', () => {
   it('texto con el estado en palabras', () => {
     expect(cellLabel(null)).toBe('—');
     expect(cellLabel({ hours: 20, capacity: 40, over: false, pct: 50 })).toBe('20 / 40 h · 50 %');
+    expect(cellLabel({ hours: 20, capacity: 0, over: true, pct: 0 })).toBe('20 / 0 h · sin capacidad · Sobreasignado');
     expect(cellLabel({ hours: 52.5, capacity: 40, over: true, pct: 131 })).toBe('52,5 / 40 h · 131 % · Sobreasignado');
   });
   it('fecha corta en español', () => {

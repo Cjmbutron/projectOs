@@ -32,6 +32,7 @@ const MESSAGES: Record<string, string> = {
   duplicate_resource: 'Ya existe un recurso con ese nombre.',
   resource_user_invalid: 'Solo una persona puede vincularse a un miembro interno activo de la organización.',
   resource_inactive: 'Ese recurso está inactivo: actívalo antes de asignarlo.',
+  invalid_absence: 'Revisa la ausencia: elige un recurso, fechas válidas (el fin no puede ser anterior al inicio, máximo 365 días de diferencia) y un motivo de hasta 200 caracteres.',
   resource_in_use: 'El recurso tiene asignaciones: desactívalo en lugar de eliminarlo.',
   duplicate_assignment: 'Ese recurso ya está asignado a la actividad.',
   invalid_assignment: 'No se pudo asignar: revisa la actividad y el recurso.',
