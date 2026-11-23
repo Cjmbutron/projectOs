@@ -38,11 +38,11 @@ Requiere PostgreSQL 15+ (por `security_invoker` en vistas) con permiso para crea
 
 ```bash
 db/tests/run.sh              # aplica migraciones sobre una BD vacía y ejecuta toda la batería
-db/tests/mutation_check.sh   # introduce 65 defectos deliberados; todos deben ser detectados
+db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben ser detectados
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **912 pruebas, 0 fallos; 65/65 mutaciones detectadas.**
+Estado actual: **959 pruebas, 0 fallos; 76/76 mutaciones detectadas.**
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -86,3 +86,9 @@ Estado actual: **912 pruebas, 0 fallos; 65/65 mutaciones detectadas.**
 - `activities.wbs_node_id`: vincula una actividad con un nodo de la WBS.
 - Vista `requirement_traceability` (security_invoker): entregables, entregables aceptados y actividades alcanzadas vía nodo de la WBS por requisito.
 - Escritura con `scope.edit` (PM y team_lead). Aprobar requisitos aún no exige una función aparte: si lo necesitas, se agrega `scope.review` como en los entregables.
+
+### 2000 · Project Charter y stakeholders (US-014)
+- `project_charters` (objetivos, alcance, fuera de alcance, criterios de éxito, supuestos, restricciones) y `project_stakeholders` (nombre, rol, influencia, interés, usuario interno opcional).
+- **Compuerta:** `draft → proposed` exige objetivos y alcance (≥ 10 caracteres cada uno) y ≥ 1 stakeholder; la impone un disparador sobre `projects`, así que no se puede saltar con un UPDATE directo. `charter_status(proyecto)` informa qué falta.
+- El charter se edita solo en `draft`/`proposed` (`charter_locked` después); los stakeholders se editan mientras el proyecto no esté cerrado o cancelado.
+- Escritura con `project.update` (PM). Nota para las pruebas: `support/01_harness.sql` crea un charter completo automáticamente en cada proyecto de prueba, salvo con `set t.no_auto_charter = 'on'` (código solo de pruebas).

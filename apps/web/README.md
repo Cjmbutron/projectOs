@@ -15,3 +15,6 @@ Predecesoras: `1|3SS+2|4FF-1` → tipo opcional (FS por defecto) y desfase opcio
 
 ## Gantt (US-021, solo lectura)
 `/projects/:id/gantt`: SVG propio con barras, hitos, dependencias FS/SS/FF/SF y ruta crítica; tabla equivalente debajo. Falta edición por arrastre y virtualización (ver ADR-007, actualización).
+
+## Project Charter (US-014)
+`/projects/:id/charter`: charter, stakeholders y botones de estado (someter a aprobación, aprobar, devolver a borrador). La base de datos impone la compuerta: sin objetivos, alcance y un stakeholder no se puede someter.

@@ -143,3 +143,19 @@ begin
   perform public.accept_invitation(v_token);
   perform t.reset();
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- SOLO PRUEBAS: la compuerta del charter (migración 2000) exigiría preparar un charter
+-- completo en cada prueba que avanza el estado de un proyecto. Para no ensuciarlas, cada
+-- proyecto nuevo recibe un charter completo, SALVO que la sesión haga
+-- `set t.no_auto_charter = 'on'` (las pruebas del charter lo hacen). No es código de producto.
+-- ---------------------------------------------------------------------------
+create function t.auto_charter() returns trigger language plpgsql security definer as $$
+begin
+  if coalesce(current_setting('t.no_auto_charter', true), 'off') = 'on' then return null; end if;
+  insert into public.project_charters (project_id, organization_id, objectives, scope)
+  values (new.id, new.organization_id, 'Objetivos de prueba del proyecto', 'Alcance de prueba del proyecto');
+  insert into public.project_stakeholders (organization_id, project_id, name) values (new.organization_id, new.id, 'Patrocinador de prueba');
+  return null;
+end $$;
+create trigger t_auto_charter after insert on public.projects for each row execute function t.auto_charter();

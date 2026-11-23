@@ -53,4 +53,4 @@ leerse como **metas**, no como resultados. La medición real del motor está en 
 ## Aplicación web (`apps/web`)
 Next.js 16 + Supabase. Pantallas: login/registro (bloqueo por cuenta), organización, proyectos, actividades con fechas calculadas y botón «Recalcular».
 Configuración: copiar `apps/web/.env.example` a `.env.local` con las claves de un proyecto Supabase tras aplicar `db/migrations/` en orden.
-Estado honesto: compila, tipa y pasa 83 pruebas de la lógica de rutas, importación CSV, dependencias, WBS, requisitos y Gantt; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**
+Estado honesto: compila, tipa y pasa 92 pruebas de la lógica de rutas, importación CSV, dependencias, WBS, requisitos, Gantt y charter; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**

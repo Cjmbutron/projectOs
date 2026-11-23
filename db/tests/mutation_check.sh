@@ -227,6 +227,46 @@ as \$\$
 begin
   null;"
 
+mutate "charter: sin compuerta draft → proposed" 2000_project_charter.sql \
+  "if old.status = 'draft' and new.status = 'proposed' then" "if false then"
+mutate "charter: objetivos de cualquier longitud" 2000_project_charter.sql \
+  "coalesce(char_length(btrim(c.objectives)), 0) < 10" "coalesce(char_length(btrim(c.objectives)), 0) < 0"
+mutate "charter: alcance de cualquier longitud" 2000_project_charter.sql \
+  "coalesce(char_length(btrim(c.scope)), 0) < 10" "coalesce(char_length(btrim(c.scope)), 0) < 0"
+mutate "charter: no exige stakeholders" 2000_project_charter.sql \
+  "case when not exists (select 1 from public.project_stakeholders s" "case when false and not exists (select 1 from public.project_stakeholders s"
+mutate "charter: editable tras aprobar" 2000_project_charter.sql \
+  "v_status not in ('draft', 'proposed')" "v_status not in ('draft', 'proposed', 'approved')"
+mutate "charter: stakeholder interno de otra organización" 2000_project_charter.sql \
+  "if tg_op <> 'DELETE' and new.user_id is not null and not exists (" "if false and not exists ("
+mutate "charter: lectura abierta" 2000_project_charter.sql \
+  "create policy charters_read on public.project_charters for select to authenticated
+  using (private.can_read_project(project_id));" "create policy charters_read on public.project_charters for select to authenticated
+  using (true);"
+mutate "charter: se escribe sin project.update" 2000_project_charter.sql \
+  "create policy charters_insert on public.project_charters for insert to authenticated
+  with check (private.has_project_permission(project_id, 'project.update'));" "create policy charters_insert on public.project_charters for insert to authenticated
+  with check (true);"
+mutate "stakeholders: se editan en proyecto cerrado" 2000_project_charter.sql \
+  "create function private.stakeholder_guard() returns trigger
+language plpgsql security definer set search_path = ''
+as \$\$
+begin
+  perform private.assert_project_writable(coalesce(new.project_id, old.project_id));" "create function private.stakeholder_guard() returns trigger
+language plpgsql security definer set search_path = ''
+as \$\$
+begin
+  null;"
+mutate "charter_status revela proyectos ajenos" 2000_project_charter.sql \
+  "  if not private.can_read_project(p_project) then
+    raise exception 'project_not_found' using errcode = 'P0002';
+  end if;
+  v_missing :=" "  v_missing :="
+mutate "stakeholders: escritura abierta" 2000_project_charter.sql \
+  "create policy stakeholders_insert on public.project_stakeholders for insert to authenticated
+  with check (private.has_project_permission(project_id, 'project.update'));" "create policy stakeholders_insert on public.project_stakeholders for insert to authenticated
+  with check (true);"
+
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]
