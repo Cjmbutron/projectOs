@@ -112,3 +112,14 @@ button.danger{background:transparent;color:var(--danger);border:1px solid rgba(2
 .g-handle{fill:transparent;cursor:ew-resize}.g-draggable:hover .g-handle,.g-draggable:focus .g-handle{fill:rgba(241,245,249,.35)}
 .g-selected .g-bar{stroke:var(--fg);stroke-width:3}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Tablero */
+.board{display:grid;grid-template-columns:repeat(3,minmax(240px,1fr));gap:16px;align-items:start}
+.board-col{background:rgba(30,41,59,.55);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-height:160px}
+.board-col.over{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.board-title{font-size:.8125rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;gap:8px;align-items:center;margin:0 0 10px}
+.board-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;box-shadow:var(--shadow)}
+.board-card[draggable=true]{cursor:grab}
+.board-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:.8125rem;color:var(--muted);margin-top:6px;align-items:center}
+.board-move{display:flex;gap:6px;margin-top:8px}.board-move select{padding:5px 8px;font-size:.8125rem}.board-move button{margin-top:0;padding:5px 10px;font-size:.8125rem}
+@media(max-width:860px){.board{grid-template-columns:minmax(0,1fr)}}

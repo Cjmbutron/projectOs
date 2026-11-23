@@ -25,6 +25,7 @@ const MESSAGES: Record<string, string> = {
   invalid_transition: 'Ese cambio de estado no está permitido.',
   schedule_not_current: 'El cronograma cambió desde el último cálculo. Recalcula antes de crear la línea base.',
   invalid_thresholds: 'Los umbrales deben ser enteros de 0 a 3650 y el rojo no puede ser menor que el ámbar.',
+  invalid_move: 'Ese movimiento no es posible (por ejemplo, un hito no puede estar «En curso»).',
   invalid_percent: 'El avance debe ser un número entero de 0 a 100.',
   milestone_progress_invalid: 'Un hito solo puede estar en 0 % (pendiente) o 100 % (cumplido).',
   activity_not_found: 'La actividad ya no existe.',
