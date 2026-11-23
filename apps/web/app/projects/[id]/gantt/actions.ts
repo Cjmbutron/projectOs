@@ -1,5 +1,6 @@
 'use server';
 import { UUID_RE } from '@/lib/http';
+import { parseDependencyForm } from '@/lib/schedule/dependency-form';
 import { validateDuration, validateMoveDate } from '@/lib/gantt/drag';
 import { scopeErrorCode } from '@/lib/scope/wbs';
 import { createClient } from '@/lib/supabase/server';
@@ -37,4 +38,20 @@ export async function resizeActivity(projectId: string, activityId: string, dura
     .eq('project_id', projectId).eq('id', activityId).select('id');
   if (error) return { ok: false, error: scopeErrorCode(error) };
   return data && data.length > 0 ? { ok: true } : { ok: false, error: 'forbidden' };
+}
+
+/** Crea una dependencia entre dos actividades; la base de datos rechaza ciclos, duplicados y permisos. */
+export async function addLink(projectId: string, predecessorId: string, successorId: string, type: string): Promise<MoveResult> {
+  const d = parseDependencyForm({ get: (k: string) => ({ predecessor: predecessorId, successor: successorId, type, lag: '0' } as Record<string, string>)[k] });
+  if (!UUID_RE.test(projectId) || !d.ok) return { ok: false, error: 'invalid_dependency' };
+  const supabase = await createClient();
+  const { data: p } = await supabase.from('projects').select('organization_id').eq('id', projectId).maybeSingle();
+  if (!p) return { ok: false, error: 'project_not_found' };
+  const { error } = await supabase.from('activity_dependencies').insert({
+    organization_id: p.organization_id, project_id: projectId,
+    predecessor_id: d.predecessorId, successor_id: d.successorId, type: d.type, lag: 0,
+  });
+  if (!error) return { ok: true };
+  const code = error.message.includes('dependency_cycle') ? 'dependency_cycle' : error.code === '42501' ? 'forbidden' : error.code === '23505' ? 'duplicate_dependency' : scopeErrorCode(error) === 'project_read_only' ? 'project_read_only' : 'invalid_dependency';
+  return { ok: false, error: code };
 }

@@ -69,3 +69,9 @@ externo; esta versión no cierra la decisión.
 - Arrastrar el **borde derecho** de una barra (o Mayús + flechas con la barra enfocada) cambia la **duración**, expresada en días laborables: el cliente cuenta los laborables entre el inicio y el nuevo fin con el calendario del proyecto (días de semana laborables, feriados y días extra) y guarda `activities.duration`; el motor recalcula las fechas. Los hitos no se redimensionan. Si el nuevo fin no cambia los días laborables (p. ej. cae en fin de semana), no se guarda nada.
 - Sigue pendiente la **vista previa de impacto** (`previewImpact`) y crear dependencias arrastrando.
 - Comprobado en Chromium con el componente real y acciones simuladas (redimensionado con puntero, con teclado, Escape, hito, sin cambio laborable); no contra Supabase real.
+
+### Complemento (21-nov-2026): crear dependencias desde el Gantt
+- Botón «Crear dependencia» (modo): se elige primero la actividad predecesora y luego la sucesora, con clic/toque o con Enter sobre la barra enfocada; el tipo (FS, SS, FF, SF) se elige en una lista. Se escogió **seleccionar en dos pasos** y no arrastrar un conector entre barras porque funciona igual con teclado y pantalla táctil y no compite con el arrastre de mover/redimensionar. Escape cancela; elegir la misma barra anula.
+- La base de datos decide: rechaza ciclos (`dependency_cycle`), duplicados y falta de permiso; el Gantt solo muestra el mensaje. El desfase (lag) se crea en 0; se edita en la pantalla del proyecto. No se usa `findCycleForNewDependency` en el cliente: la comprobación autoritativa es la del disparador de la base.
+- Comprobado en Chromium con el componente real y acciones simuladas (dos clics, tipo SS, error de ciclo, misma barra, modo sin arrastre, teclado, salir del modo); no contra Supabase real.
+- Pendiente del Gantt: vista previa de impacto mientras se arrastra.

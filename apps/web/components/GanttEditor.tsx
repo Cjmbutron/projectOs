@@ -5,7 +5,9 @@ import { GanttChart } from '@/components/GanttChart';
 import { messageFor } from '@/lib/errors';
 import { durationForFinish, shiftIso, snapDays, type WorkCal } from '@/lib/gantt/drag';
 import type { Bar, GanttLayout } from '@/lib/gantt/layout';
-import { moveActivity, resizeActivity } from '@/app/projects/[id]/gantt/actions';
+import { DEP_LABEL, nextLink, type LinkState } from '@/lib/gantt/link';
+import type { DepType } from '@/lib/schedule/dependency-form';
+import { addLink, moveActivity, resizeActivity } from '@/app/projects/[id]/gantt/actions';
 
 export interface CalendarData { weekdays: number[]; holidays: string[]; extraWorking: string[] }
 type Mode = 'move' | 'resize';
@@ -21,6 +23,11 @@ export function GanttEditor({ layout, projectId, calendar }: { layout: GanttLayo
   const [busy, setBusy] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const active = useRef<Active | null>(null);
+  const [link, setLinkState] = useState<LinkState>({ step: 'off' });
+  const linkRef = useRef<LinkState>({ step: 'off' });
+  const [depType, setDepType] = useState<DepType>('FS');
+  const depTypeRef = useRef<DepType>('FS');
+  depTypeRef.current = depType;
   const bars = useRef(new Map<string, Bar>());
   bars.current = new Map(layout.bars.map((b) => [b.id, b]));
   const cal: WorkCal = useMemo(() => ({ weekdays: calendar.weekdays, holidays: new Set(calendar.holidays), extraWorking: new Set(calendar.extraWorking) }), [calendar]);
@@ -88,6 +95,38 @@ export function GanttEditor({ layout, projectId, calendar }: { layout: GanttLayo
     }
   }
 
+  const setLink = (st: LinkState) => { linkRef.current = st; setLinkState(st); };
+  const markSelected = (id: string | null) => {
+    root.current?.querySelectorAll('[data-bar]').forEach((g) => g.classList.toggle('g-selected', id !== null && g.getAttribute('data-bar') === id));
+  };
+  async function linkEvent(ev: Parameters<typeof nextLink>[1]) {
+    const step = nextLink(linkRef.current, ev);
+    setLink(step.state);
+    markSelected(step.state.step === 'pick-succ' ? step.state.predecessorId : null);
+    if (step.state.step === 'pick-succ') {
+      setMsg({ text: `Predecesora: ${bars.current.get(step.state.predecessorId)?.label}. Ahora elige la sucesora.`, bad: false });
+    } else if (!step.submit) {
+      setMsg(ev.type === 'toggle' && step.state.step === 'pick-pred' ? { text: 'Modo dependencia: elige la actividad predecesora.', bad: false } : null);
+    }
+    if (!step.submit) return;
+    const { predecessorId, successorId } = step.submit;
+    const names = `${bars.current.get(predecessorId)?.label} → ${bars.current.get(successorId)?.label}`;
+    setBusy(true); setMsg(null);
+    try {
+      const r = await addLink(projectId, predecessorId, successorId, depTypeRef.current);
+      if (!r.ok) return setMsg({ text: messageFor(r.error), bad: true });
+      const res = await fetch(`/api/projects/${projectId}/recalculate`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok) return setMsg({ text: `La dependencia se guardó, pero no se pudo recalcular: ${data.message ? String(data.message) : messageFor(data.error as string)}`, bad: true });
+      setMsg({ text: `Dependencia creada (${depTypeRef.current}): ${names}.`, bad: false });
+      router.refresh();
+    } catch {
+      setMsg({ text: 'No se pudo conectar con el servidor. Revisa tu conexión y vuelve a intentarlo.', bad: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div
       ref={root}
@@ -95,6 +134,7 @@ export function GanttEditor({ layout, projectId, calendar }: { layout: GanttLayo
       onPointerDown={(e) => {
         const hit = barOf(e.target);
         if (!hit || busy || e.button !== 0) return;
+        if (linkRef.current.step !== 'off') { e.preventDefault(); void linkEvent({ type: 'pick', id: hit.id }); return; }
         active.current = { id: hit.id, g: hit.g, mode: hit.handle ? 'resize' : 'move', x0: e.clientX, days: 0 };
         (e.target as Element).setPointerCapture?.(e.pointerId);
         hit.g.focus();
@@ -109,6 +149,11 @@ export function GanttEditor({ layout, projectId, calendar }: { layout: GanttLayo
       onPointerCancel={() => { const a = active.current; active.current = null; if (a) restore(a.g); }}
       onKeyDown={(e) => {
         const hit = barOf(e.target);
+        if (linkRef.current.step !== 'off') {
+          if (e.key === 'Escape') void linkEvent({ type: 'cancel' });
+          else if (hit && !busy && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); void linkEvent({ type: 'pick', id: hit.id }); }
+          return;
+        }
         if (!hit || busy) return;
         const mode: Mode = e.shiftKey ? 'resize' : 'move';
         let a = active.current && active.current.id === hit.id ? active.current : null;
@@ -122,6 +167,15 @@ export function GanttEditor({ layout, projectId, calendar }: { layout: GanttLayo
         else if (e.key === 'Escape' && a) { active.current = null; restore(a.g); setMsg(null); }
       }}
     >
+      <div className="row" role="toolbar" aria-label="Herramientas del Gantt">
+        <button type="button" className="secondary" style={{ marginTop: 0 }} aria-pressed={link.step !== 'off'} disabled={busy} onClick={() => void linkEvent({ type: 'toggle' })}>
+          {link.step === 'off' ? 'Crear dependencia' : 'Salir del modo dependencia'}
+        </button>
+        <label htmlFor="dep-type" className="sr-only">Tipo de dependencia</label>
+        <select id="dep-type" value={depType} onChange={(e) => setDepType(e.target.value as DepType)} disabled={busy}>
+          {(Object.keys(DEP_LABEL) as DepType[]).map((t) => <option key={t} value={t}>{DEP_LABEL[t]}</option>)}
+        </select>
+      </div>
       <GanttChart layout={layout} editable />
       <p role="status" aria-live="polite" className={msg?.bad ? 'err' : 'okmsg'}>{busy ? 'Guardando y recalculando…' : msg?.text}</p>
     </div>

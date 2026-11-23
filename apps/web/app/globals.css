@@ -24,3 +24,4 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;bord
 
 .g-draggable{cursor:grab;touch-action:none}.g-draggable:active{cursor:grabbing}.g-draggable:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .g-handle{fill:transparent;cursor:ew-resize}.g-draggable:hover .g-handle,.g-draggable:focus .g-handle{fill:rgba(0,0,0,.25)}
+.g-selected .g-bar{stroke:var(--fg);stroke-width:3}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
