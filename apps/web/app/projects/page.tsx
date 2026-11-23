@@ -41,10 +41,10 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   const { data: orgs } = await supabase.from('organizations').select('id,name,health_amber_days,health_red_days').order('name');
   if (!orgs || orgs.length === 0) redirect('/onboarding');
   const { data: projects } = await supabase
-    .from('projects').select('id,code,name,status,health,organization_id').is('deleted_at', null).order('code');
+    .from('projects').select('id,code,name,status,health,progress_percent,organization_id').is('deleted_at', null).order('code');
   return (
     <main>
-      <div className="row"><h1>Proyectos — {orgs[0].name}</h1><LogoutButton /></div>
+      <div className="row"><h1>Proyectos — {orgs[0].name}</h1><Link href="/mis-actividades">Mis actividades</Link> <LogoutButton /></div>
       {projects && projects.length > 0 && (() => {
         const sum = summarizeHealth(projects);
         return (
@@ -60,9 +60,9 @@ export default async function Projects({ searchParams }: { searchParams: Promise
       })()}
       <div className="card">
         {projects && projects.length > 0 ? (
-          <table><thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th>Salud</th></tr></thead>
+          <table><thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th>Salud</th><th>Avance</th></tr></thead>
             <tbody>{projects.map((p) => (
-              <tr key={p.id}><td>{p.code}</td><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{p.status}</td><td>{isHealth(p.health) ? `${HEALTH_ICON[p.health]} ${HEALTH_LABEL[p.health]}` : '—'}</td></tr>
+              <tr key={p.id}><td>{p.code}</td><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{p.status}</td><td>{isHealth(p.health) ? `${HEALTH_ICON[p.health]} ${HEALTH_LABEL[p.health]}` : '—'}</td><td>{Number(p.progress_percent ?? 0)} %</td></tr>
             ))}</tbody></table>
         ) : <p>Aún no hay proyectos.</p>}
       </div>
