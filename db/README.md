@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **1137 pruebas, 0 fallos; 123/123 mutaciones detectadas** (en la 2500 se corrieron solo las de recursos y ausencias; la corrida completa de ~15 min quedó pendiente).
+Estado actual: **1149 pruebas, 0 fallos; 129/129 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las 7 de la 2600 se corrieron aparte).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -118,3 +118,7 @@ Estado actual: **1137 pruebas, 0 fallos; 123/123 mutaciones detectadas** (en la 
 - **Ausencias** (`resource_absences`): rango de fechas de un recurso (1 a 366 días, fin ≥ inicio) con motivo opcional (≤ 200). Las ven los miembros internos; las crea, edita y borra quien tiene `resource.manage`. Se borran con el recurso.
 - **Efecto:** en `resource_load`, capacidad semanal = capacidad diaria × (5 − días de lunes a viernes ausentes de esa semana). Las horas asignadas no cambian: trabajo en días de ausencia deja la semana sobreasignada (capacidad 0 con trabajo = sobreasignada). Ausencias que se cruzan no cuentan dos veces el mismo día; sábado y domingo no restan.
 - La migración reemplaza `resource_load` con la misma firma; las mutaciones de la carga apuntan ahora a la 2500.
+
+### 2600 · El responsable asigna recursos en sus actividades
+- Asignar, cambiar la dedicación o quitar un recurso exige `schedule.edit` **o** ser el responsable (`assignee_id`) de esa actividad, siendo además miembro interno activo de la organización y miembro del proyecto (mismo criterio que el registro de avance). No puede tocar asignaciones de actividades ajenas ni cambia nada más del cronograma.
+- Helper `private.can_assign_resources(proyecto, actividad)`, usado por las tres políticas de `activity_resources`.

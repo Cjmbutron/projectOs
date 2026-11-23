@@ -376,6 +376,28 @@ mutate "recursos: can_manage_resources siempre verdadero" 2400_can_manage_resour
   "select coalesce(private.has_org_permission(p_org, 'resource.manage'), false)" "select true"
 mutate "recursos: can_manage_resources con otro permiso" 2400_can_manage_resources.sql \
   "private.has_org_permission(p_org, 'resource.manage')" "private.has_org_permission(p_org, 'project.create')"
+mutate "asignar: el responsable puede asignar en cualquier actividad" 2600_assignee_assigns_resources.sql \
+  "where a.id = p_activity and a.project_id = p_project and a.assignee_id = auth.uid())" "where a.project_id = p_project and a.assignee_id = auth.uid())"
+mutate "asignar: cualquiera asigna sin ser responsable" 2600_assignee_assigns_resources.sql \
+  "where a.id = p_activity and a.project_id = p_project and a.assignee_id = auth.uid())" "where a.id = p_activity and a.project_id = p_project)"
+mutate "asignar: el responsable no necesita ser miembro del proyecto" 2600_assignee_assigns_resources.sql \
+  "join public.project_members pm on pm.project_id = a.project_id and pm.user_id = auth.uid()" "left join public.project_members pm on pm.project_id = a.project_id and pm.user_id = auth.uid()"
+mutate "asignar: se pierde el permiso schedule.edit" 2600_assignee_assigns_resources.sql \
+  "select coalesce(private.has_project_permission(p_project, 'schedule.edit'), false)" "select false"
+mutate "asignar: el responsable no necesita ser miembro interno activo" 2600_assignee_assigns_resources.sql \
+  "and m.status = 'active' and m.membership_type = 'internal'
+        join" "
+        join"
+mutate "asignar: el responsable puede cambiar asignaciones ajenas (update)" 2600_assignee_assigns_resources.sql \
+  "using (private.can_assign_resources(project_id, activity_id))
+  with check (private.can_assign_resources(project_id, activity_id));
+create policy activity_resources_delete" "using (true)
+  with check (private.can_assign_resources(project_id, activity_id));
+create policy activity_resources_delete"
+mutate "asignar: borrar sin control" 2600_assignee_assigns_resources.sql \
+  "create policy activity_resources_delete on public.activity_resources for delete to authenticated
+  using (private.can_assign_resources(project_id, activity_id));" "create policy activity_resources_delete on public.activity_resources for delete to authenticated
+  using (true);"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]

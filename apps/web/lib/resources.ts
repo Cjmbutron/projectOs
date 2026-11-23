@@ -4,7 +4,7 @@ export type ResourceKind = 'person' | 'equipment';
 export const KIND_LABEL: Record<ResourceKind, string> = { person: 'Persona', equipment: 'Equipo' };
 
 export type ResourceParse =
-  | { ok: true; name: string; kind: ResourceKind; dailyHours: number }
+  | { ok: true; name: string; kind: ResourceKind; dailyHours: number; userId: string | null }
   | { ok: false; error: 'invalid_resource' };
 
 /** Horas por día: positivas, hasta 24, con a lo sumo dos decimales (acepta coma o punto). */
@@ -19,10 +19,13 @@ export function parseResourceForm(f: { get(name: string): unknown }): ResourcePa
   const name = String(f.get('name') ?? '').trim();
   const kind = String(f.get('kind') ?? 'person');
   const hours = parseHours(f.get('daily_hours') ?? '8');
+  const rawUser = String(f.get('user') ?? '').trim();
   if (name.length < 1 || name.length > 120 || (kind !== 'person' && kind !== 'equipment') || hours === null) {
     return { ok: false, error: 'invalid_resource' };
   }
-  return { ok: true, name, kind, dailyHours: hours };
+  // Miembro vinculado: vacío = sin vínculo; un equipo no puede tenerlo; debe ser un UUID.
+  if (rawUser !== '' && (kind !== 'person' || !UUID_RE.test(rawUser))) return { ok: false, error: 'invalid_resource' };
+  return { ok: true, name, kind, dailyHours: hours, userId: rawUser === '' ? null : rawUser };
 }
 
 export type AssignParse =

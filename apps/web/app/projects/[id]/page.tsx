@@ -122,6 +122,9 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
     supabase.from('activity_resources').select('id,activity_id,resource_id,allocation_percent').eq('project_id', id).order('created_at'),
     supabase.from('resources').select('id,name,daily_hours,active').order('name'),
   ]);
+  // Quien edita el cronograma asigna en todas; el responsable, solo en sus actividades (la BD decide de verdad)
+  const assignable = (acts ?? []).filter((a) => canReportProgress({ canEditSchedule: canEditData === true, userId: me, assigneeId: a.assignee_id }));
+  const assignableIds = new Set(assignable.map((a) => a.id));
   const resName = new Map((resList ?? []).map((r) => [r.id, r.name]));
   const stale = sched && sched.computed_version !== sched.schedule_version;
   return (
@@ -166,21 +169,22 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       </div>
       <div className="card">
         <h2>Recursos asignados</h2>
+        {canEditData !== true && assignable.length > 0 && <p style={{ color: 'var(--muted)' }}>Puedes asignar recursos a las actividades en las que eres responsable.</p>}
         {(assigns ?? []).length === 0 ? <p>Sin recursos asignados.</p> : (
-          <table><thead><tr><th>Actividad</th><th>Recurso</th><th>Dedicación</th>{canEditData === true && <th></th>}</tr></thead>
+          <table><thead><tr><th>Actividad</th><th>Recurso</th><th>Dedicación</th>{assignable.length > 0 && <th></th>}</tr></thead>
             <tbody>{(assigns ?? []).map((x) => (
               <tr key={x.id}><td>{nameOf.get(x.activity_id)}</td><td>{resName.get(x.resource_id) ?? '—'}</td><td>{x.allocation_percent} %</td>
-                {canEditData === true && (
-                  <td><form action={unassignResource}><input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={x.id} />
-                    <button className="secondary" style={{ marginTop: 0 }}>Quitar</button></form></td>
+                {assignable.length > 0 && (
+                  <td>{assignableIds.has(x.activity_id) && <form action={unassignResource}><input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={x.id} />
+                    <button className="secondary" style={{ marginTop: 0 }}>Quitar</button></form>}</td>
                 )}</tr>
             ))}</tbody></table>
         )}
-        {canEditData === true && (acts ?? []).length > 0 && (resList ?? []).some((r) => r.active) && (
+        {assignable.length > 0 && (resList ?? []).some((r) => r.active) && (
           <form action={assignResource}>
             <input type="hidden" name="project" value={id} />
             <label htmlFor="as-activity">Actividad</label>
-            <select id="as-activity" name="activity" required>{(acts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+            <select id="as-activity" name="activity" required>{assignable.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
             <label htmlFor="as-resource">Recurso</label>
             <select id="as-resource" name="resource" required>{(resList ?? []).filter((r) => r.active).map((r) => <option key={r.id} value={r.id}>{r.name} ({formatHours(Number(r.daily_hours))}/día)</option>)}</select>
             <label htmlFor="as-percent">Dedicación (% de su jornada, 1 a 100)</label>
@@ -188,7 +192,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             <button>Asignar recurso</button>
           </form>
         )}
-        {canEditData === true && (resList ?? []).filter((r) => r.active).length === 0 && <p style={{ color: 'var(--muted)' }}>No hay recursos activos. <Link href="/resources">Crear recursos</Link></p>}
+        {assignable.length > 0 && (resList ?? []).filter((r) => r.active).length === 0 && <p style={{ color: 'var(--muted)' }}>No hay recursos activos. <Link href="/resources">Crear recursos</Link></p>}
       </div>
       <div className="card">
         <h2>Dependencias</h2>

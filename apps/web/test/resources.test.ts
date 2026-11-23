@@ -5,6 +5,19 @@ const A = '11111111-1111-4111-8111-111111111111';
 const R = '22222222-2222-4222-8222-222222222222';
 const form = (o: Record<string, unknown>) => ({ get: (k: string) => o[k] });
 
+describe('parseResourceForm · miembro vinculado', () => {
+  const U = '123e4567-e89b-42d3-a456-426614174000';
+  it('acepta un UUID para una persona y vacío como sin vínculo', () => {
+    expect(parseResourceForm(form({ name: 'Ana', user: U }))).toMatchObject({ ok: true, userId: U });
+    expect(parseResourceForm(form({ name: 'Ana', user: '  ' }))).toMatchObject({ ok: true, userId: null });
+  });
+  it('rechaza un valor que no es UUID y un equipo con miembro', () => {
+    expect(parseResourceForm(form({ name: 'Ana', user: 'nadie' })).ok).toBe(false);
+    expect(parseResourceForm(form({ name: 'Srv', kind: 'equipment', user: U })).ok).toBe(false);
+    expect(parseResourceForm(form({ name: 'Srv', kind: 'equipment', user: '' })).ok).toBe(true);
+  });
+});
+
 describe('parseHours', () => {
   it('acepta positivos hasta 24 con dos decimales, con coma o punto', () => {
     expect(parseHours('8')).toBe(8);
@@ -22,8 +35,8 @@ describe('parseHours', () => {
 
 describe('parseResourceForm', () => {
   it('válido, con valores por defecto', () => {
-    expect(parseResourceForm(form({ name: '  Ana  ' }))).toEqual({ ok: true, name: 'Ana', kind: 'person', dailyHours: 8 });
-    expect(parseResourceForm(form({ name: 'Servidor', kind: 'equipment', daily_hours: '4' }))).toEqual({ ok: true, name: 'Servidor', kind: 'equipment', dailyHours: 4 });
+    expect(parseResourceForm(form({ name: '  Ana  ' }))).toEqual({ ok: true, name: 'Ana', kind: 'person', dailyHours: 8, userId: null });
+    expect(parseResourceForm(form({ name: 'Servidor', kind: 'equipment', daily_hours: '4' }))).toEqual({ ok: true, name: 'Servidor', kind: 'equipment', dailyHours: 4, userId: null });
   });
   it('nombre de 120 caracteres sí, de 121 no; vacío no', () => {
     expect(parseResourceForm(form({ name: 'a'.repeat(120) })).ok).toBe(true);

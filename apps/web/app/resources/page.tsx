@@ -15,12 +15,18 @@ export default async function Resources({ searchParams }: { searchParams: Promis
   const { data: orgs } = await supabase.from('organizations').select('id,name').order('name');
   if (!orgs?.length) redirect('/onboarding');
   const org = orgs[0];
-  const [{ data: canManage }, { data: rows }, { data: counts }, { data: absences }] = await Promise.all([
+  const [{ data: canManage }, { data: rows }, { data: counts }, { data: absences }, { data: memberRows }] = await Promise.all([
     supabase.rpc('can_manage_resources', { p_org: org.id }),
-    supabase.from('resources').select('id,name,kind,daily_hours,active').eq('organization_id', org.id).order('name'),
+    supabase.from('resources').select('id,name,kind,daily_hours,active,user_id').eq('organization_id', org.id).order('name'),
     supabase.from('activity_resources').select('resource_id').eq('organization_id', org.id),
     supabase.from('resource_absences').select('id,resource_id,start_date,end_date,reason').eq('organization_id', org.id),
+    supabase.from('organization_members').select('user_id').eq('organization_id', org.id).eq('status', 'active').eq('membership_type', 'internal'),
   ]);
+  const ids = (memberRows ?? []).map((m) => m.user_id);
+  const { data: profs } = ids.length ? await supabase.from('profiles').select('id,display_name').in('id', ids) : { data: [] as { id: string; display_name: string }[] };
+  const members = [...(profs ?? [])].sort((a, b) => a.display_name.localeCompare(b.display_name, 'es'));
+  const linkedTo = new Map((rows ?? []).filter((r) => r.user_id).map((r) => [r.user_id as string, r.id]));
+  const userName = new Map(members.map((m) => [m.id, m.display_name]));
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: process.env.APP_TIMEZONE || 'America/La_Paz' }).format(new Date());
   const names = new Map((rows ?? []).map((r) => [r.id, r.name]));
   const abs = upcoming(absences ?? [], today);
@@ -47,13 +53,17 @@ export default async function Resources({ searchParams }: { searchParams: Promis
                         <option value="person">Persona</option><option value="equipment">Equipo</option>
                       </select>
                       <input name="daily_hours" type="number" min={0.25} max={24} step={0.25} defaultValue={Number(r.daily_hours)} aria-label="Horas por día" style={{ width: '5rem' }} />
+                      <select name="user" defaultValue={r.user_id ?? ''} aria-label={`Miembro vinculado a ${r.name}`}>
+                        <option value="">Sin miembro</option>
+                        {members.filter((m) => !linkedTo.has(m.id) || linkedTo.get(m.id) === r.id).map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
+                      </select>
                       <label><input type="checkbox" name="active" defaultChecked={r.active} /> Activo</label>
                       <button className="secondary" style={{ marginTop: 0 }}>Guardar</button>
                     </form>
                   </td>
                 ) : (
                   <>
-                    <td>{r.name}</td><td>{KIND_LABEL[r.kind as ResourceKind]}</td><td>{formatHours(Number(r.daily_hours))}</td><td>{r.active ? 'Activo' : 'Inactivo'}</td>
+                    <td>{r.name}{r.user_id && userName.get(r.user_id) ? ` (${userName.get(r.user_id)})` : ''}</td><td>{KIND_LABEL[r.kind as ResourceKind]}</td><td>{formatHours(Number(r.daily_hours))}</td><td>{r.active ? 'Activo' : 'Inactivo'}</td>
                   </>
                 )}
                 <td>{used.get(r.id) ?? 0}</td>
@@ -108,6 +118,8 @@ export default async function Resources({ searchParams }: { searchParams: Promis
           <select id="kind" name="kind"><option value="person">Persona</option><option value="equipment">Equipo</option></select>
           <label htmlFor="daily_hours">Horas por día</label>
           <input id="daily_hours" name="daily_hours" type="number" min={0.25} max={24} step={0.25} defaultValue={8} required />
+          <label htmlFor="user">Miembro vinculado (solo personas, opcional)</label>
+          <select id="user" name="user"><option value="">Sin miembro</option>{members.filter((m) => !linkedTo.has(m.id)).map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}</select>
           <button>Crear recurso</button>
         </form>
       ) : <p style={{ color: 'var(--muted)' }}>Solo owner, administradores y Project Managers pueden crear o editar recursos.</p>}

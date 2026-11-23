@@ -14,7 +14,7 @@ export async function createResource(formData: FormData) {
   if (!p.ok) back(p.error);
   const v = p as Extract<typeof p, { ok: true }>;
   const supabase = await createClient();
-  const { error } = await supabase.from('resources').insert({ organization_id: org, name: v.name, kind: v.kind, daily_hours: v.dailyHours });
+  const { error } = await supabase.from('resources').insert({ organization_id: org, name: v.name, kind: v.kind, daily_hours: v.dailyHours, user_id: v.userId });
   back(resourceErrorCode(error, 'resource'));
 }
 
@@ -26,7 +26,7 @@ export async function updateResource(formData: FormData) {
   const v = p as Extract<typeof p, { ok: true }>;
   const supabase = await createClient();
   const { data, error } = await supabase.from('resources')
-    .update({ name: v.name, kind: v.kind, daily_hours: v.dailyHours, active: formData.get('active') === 'on' })
+    .update({ name: v.name, kind: v.kind, daily_hours: v.dailyHours, user_id: v.userId, active: formData.get('active') === 'on' })
     .eq('id', id).select('id');
   back(error ? resourceErrorCode(error, 'resource') : !data?.length ? 'forbidden' : undefined);
 }
