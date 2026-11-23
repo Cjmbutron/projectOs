@@ -8,7 +8,7 @@ Plataforma de gestión de proyectos. Definición del producto: **POS-001 v1.2** 
 project-os/
 ├── docs/adr/                    Decisiones de arquitectura (ADR-001 a 007)
 ├── docs/POS-002-modelo-de-datos.md      Modelo, permisos y políticas (generado)
-├── docs/guia-pruebas-manuales.md        Lista de comprobación para probar las entregas 10–29 en tu Supabase
+├── docs/guia-pruebas-manuales.md        Lista de comprobación para probar las entregas 10–31 en tu Supabase
 ├── scripts/                     backup.sh (respaldo) y apply-migrations.sh (aplica migraciones en orden)
 ├── db/                          Migraciones SQL y pruebas de seguridad — ver db/README.md
 ├── packages/
@@ -46,7 +46,7 @@ POS-001 v1.2 §2 declara como "hecho y probado" el esquema `db/` (128 pruebas de
 | Esquema de base de datos R1 + R2 (cronograma, líneas base), RLS, auditoría y pruebas de aislamiento | **Hecho y probado en PostgreSQL 16 con reemplazo de Supabase** (`db/`, R1 + R2 + R3 mínimo, 1160 pruebas, 132/133 mutaciones detectadas) |
 | Servicio de recálculo (`schedule-service`): 11 pruebas unitarias + 8 de integración contra PostgreSQL real | **Hecho y probado** |
 | Prueba contra un proyecto Supabase real | **Pendiente** (necesita tus cuentas) |
-| Aplicación web | Construida hasta la entrega 29 (ver abajo); sin probar contra Supabase real |
+| Aplicación web | Construida hasta la entrega 31 (ver abajo); sin probar contra Supabase real |
 | Diseño UX/UI | Pendiente (requiere diseñador) |
 
 Las cifras de POS-001 que dependían de ese material (128 pruebas de RLS; 5 000 actividades en ~170 ms) deben
@@ -55,4 +55,4 @@ leerse como **metas**, no como resultados. La medición real del motor está en 
 ## Aplicación web (`apps/web`)
 Next.js 16 + Supabase. Pantallas: login/registro (bloqueo por cuenta), organización, proyectos, actividades con fechas calculadas y botón «Recalcular».
 Configuración: copiar `apps/web/.env.example` a `.env.local` con las claves de un proyecto Supabase tras aplicar `db/migrations/` en orden (`DATABASE_URL=… scripts/apply-migrations.sh`; ver `docs/guia-pruebas-manuales.md`).
-Estado honesto: compila, tipa y pasa 175 pruebas de la lógica de rutas, importación CSV, dependencias, WBS, requisitos, Gantt, charter, líneas base, salud, arrastre del Gantt, avance, «Mis actividades», recursos, carga semanal y ausencias; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**
+Estado honesto: compila, tipa y pasa 185 pruebas de la lógica de rutas, importación CSV, dependencias, WBS, requisitos, Gantt, charter, líneas base, salud, arrastre del Gantt, avance, «Mis actividades», recursos, carga semanal y ausencias; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**

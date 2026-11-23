@@ -7,6 +7,7 @@ import { loadRange, overloadedAmong, shortDate, type LoadRow } from '@/lib/load'
 import { canReportProgress, parseProgress, progressErrorCode, STATUS_LABEL } from '@/lib/progress';
 import { formatHours, parseAssignForm, resourceErrorCode } from '@/lib/resources';
 import { parseDependencyForm } from '@/lib/schedule/dependency-form';
+import { actLabel, DEP_TYPE_LABEL, depLabel, parseDependencyUpdate, parseOpen, predecessorCandidates, successorCandidates } from '@/lib/schedule/dep-candidates';
 import { createClient } from '@/lib/supabase/server';
 
 async function addActivity(formData: FormData) {
@@ -50,17 +51,38 @@ async function addDependency(formData: FormData) {
   'use server';
   const project = String(formData.get('project'));
   if (!UUID_RE.test(project)) redirect('/projects');
-  const d = parseDependencyForm(formData);
-  if (!d.ok) redirect(`/projects/${project}?error=${d.error}`);
+  const open = parseOpen(formData.get('open'));
+  const back = (code: string) => redirect(`/projects/${project}?${new URLSearchParams({ ...(code ? { error: code } : {}), ...(open ? { open } : {}) })}${open ? `#dep-${open}` : ''}`);
+  // Desde el panel de una actividad: «other» es la otra punta y «direction» dice si esa actividad es sucesora (pred) o predecesora (succ)
+  const other = String(formData.get('other') ?? '');
+  const dir = String(formData.get('direction') ?? '');
+  const d = parseDependencyForm(open && other ? {
+    get: (k: string) => k === 'predecessor' ? (dir === 'succ' ? open : other) : k === 'successor' ? (dir === 'succ' ? other : open) : formData.get(k),
+  } : formData);
+  if (!d.ok) back(d.error);
+  const dd = d as Extract<typeof d, { ok: true }>;
   const supabase = await createClient();
   const { data: p } = await supabase.from('projects').select('organization_id').eq('id', project).single();
   if (!p) redirect('/projects');
   const { error } = await supabase.from('activity_dependencies').insert({
     organization_id: p.organization_id, project_id: project,
-    predecessor_id: d.predecessorId, successor_id: d.successorId, type: d.type, lag: d.lag,
+    predecessor_id: dd.predecessorId, successor_id: dd.successorId, type: dd.type, lag: dd.lag,
   });
-  const code = !error ? '' : error.message.includes('dependency_cycle') ? 'dependency_cycle' : error.code === '42501' ? 'forbidden' : error.code === '23505' ? 'duplicate_dependency' : 'invalid_dependency';
-  redirect(`/projects/${project}${code ? `?error=${code}` : ''}`);
+  back(!error ? '' : error.message.includes('dependency_cycle') ? 'dependency_cycle' : error.code === '42501' ? 'forbidden' : error.code === '23505' ? 'duplicate_dependency' : 'invalid_dependency');
+}
+
+async function updateDependency(formData: FormData) {
+  'use server';
+  const project = String(formData.get('project'));
+  if (!UUID_RE.test(project)) redirect('/projects');
+  const open = parseOpen(formData.get('open'));
+  const back = (code: string) => redirect(`/projects/${project}?${new URLSearchParams({ ...(code ? { error: code } : {}), ...(open ? { open } : {}) })}${open ? `#dep-${open}` : ''}`);
+  const u = parseDependencyUpdate(formData);
+  if (!u.ok) back(u.error);
+  const uu = u as Extract<typeof u, { ok: true }>;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('activity_dependencies').update({ type: uu.type, lag: uu.lag }).eq('id', uu.id).eq('project_id', project).select('id');
+  back(error ? 'invalid_dependency' : !data?.length ? 'forbidden' : '');
 }
 
 async function assignResource(formData: FormData) {
@@ -98,10 +120,11 @@ async function removeDependency(formData: FormData) {
   const supabase = await createClient();
   const { data, error } = await supabase.from('activity_dependencies').delete().eq('id', id).eq('project_id', project).select('id');
   // RLS no da error cuando no deja borrar: simplemente no afecta filas.
-  redirect(`/projects/${project}${error || !data?.length ? '?error=forbidden' : ''}`);
+  const open = parseOpen(formData.get('open'));
+  redirect(`/projects/${project}?${new URLSearchParams({ ...(error || !data?.length ? { error: 'forbidden' } : {}), ...(open ? { open } : {}) })}${open ? `#dep-${open}` : ''}`);
 }
 
-export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
+export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; open?: string }> }) {
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
   const sp = await searchParams;
@@ -210,28 +233,55 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       </div>
       <div className="card">
         <h2>Dependencias</h2>
-        {(deps ?? []).length === 0 ? <p>Sin dependencias.</p> : (
-          <table><thead><tr><th>Predecesora</th><th>Sucesora</th><th>Tipo</th><th>Desfase</th><th></th></tr></thead>
-            <tbody>{(deps ?? []).map((d) => (
-              <tr key={d.id}><td>{nameOf.get(d.predecessor_id)}</td><td>{nameOf.get(d.successor_id)}</td><td>{d.type}</td><td>{d.lag}</td>
-                <td><form action={removeDependency}><input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={d.id} />
-                  <button className="secondary" style={{ marginTop: 0 }}>Quitar</button></form></td></tr>
-            ))}</tbody></table>
-        )}
-        {(acts ?? []).length >= 2 && (
-          <form action={addDependency}>
-            <input type="hidden" name="project" value={id} />
-            <label htmlFor="predecessor">Predecesora</label>
-            <select id="predecessor" name="predecessor" required>{(acts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-            <label htmlFor="successor">Sucesora</label>
-            <select id="successor" name="successor" required>{(acts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-            <label htmlFor="type">Tipo</label>
-            <select id="type" name="type" defaultValue="FS"><option value="FS">Fin a inicio (FS)</option><option value="SS">Inicio a inicio (SS)</option><option value="FF">Fin a fin (FF)</option><option value="SF">Inicio a fin (SF)</option></select>
-            <label htmlFor="lag">Desfase (días hábiles, puede ser negativo)</label>
-            <input id="lag" name="lag" type="number" min={-36500} max={36500} defaultValue={0} />
-            <button>Agregar dependencia</button>
-          </form>
-        )}
+        <p style={{ color: 'var(--muted)' }}>
+          Abre una actividad para ver sus predecesoras y sucesoras, cambiar su tipo o desfase y agregar más. La lista solo ofrece actividades que no crean un ciclo.
+          Tras cambiar dependencias, recalcula el cronograma.
+        </p>
+        {(acts ?? []).length === 0 ? <p>Sin actividades.</p> : (acts ?? []).map((a, i) => {
+          const preds = (deps ?? []).filter((d) => d.successor_id === a.id);
+          const succs = (deps ?? []).filter((d) => d.predecessor_id === a.id);
+          const label = (id: string) => { const k = (acts ?? []).findIndex((x) => x.id === id); return k < 0 ? '—' : actLabel(k, nameOf.get(id) ?? ''); };
+          const row = (d: (typeof preds)[number], shown: string) => (
+            <li key={d.id} style={{ marginBottom: 6 }}>
+              <span>{shown}</span>{' '}
+              {canEditData === true && <form action={updateDependency} style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={d.id} /><input type="hidden" name="open" value={a.id} />
+                <select name="type" defaultValue={d.type} aria-label="Tipo">{(Object.keys(DEP_TYPE_LABEL) as (keyof typeof DEP_TYPE_LABEL)[]).map((t) => <option key={t} value={t}>{DEP_TYPE_LABEL[t]}</option>)}</select>
+                <input name="lag" type="number" min={-36500} max={36500} defaultValue={d.lag} aria-label="Desfase en días hábiles" style={{ width: 80 }} />
+                <button className="secondary" style={{ marginTop: 0 }}>Guardar</button>
+              </form>}
+              {canEditData !== true && <span> · {depLabel(d.type, d.lag)}</span>}
+              {canEditData === true && (
+                <form action={removeDependency} style={{ display: 'inline' }}>
+                  <input type="hidden" name="project" value={id} /><input type="hidden" name="id" value={d.id} /><input type="hidden" name="open" value={a.id} />
+                  <button className="secondary" style={{ marginTop: 0 }}>Quitar</button>
+                </form>
+              )}
+            </li>
+          );
+          const addForm = (dir: 'pred' | 'succ', options: { id: string; name: string }[]) => options.length === 0 ? <p style={{ color: 'var(--muted)' }}>No hay actividades disponibles (todas ya están relacionadas o crearían un ciclo).</p> : (
+            <form action={addDependency} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="hidden" name="project" value={id} /><input type="hidden" name="open" value={a.id} /><input type="hidden" name="direction" value={dir === 'pred' ? 'pred' : 'succ'} />
+              <select name="other" required aria-label={dir === 'pred' ? 'Nueva predecesora' : 'Nueva sucesora'}>
+                {options.map((o) => <option key={o.id} value={o.id}>{label(o.id)}</option>)}
+              </select>
+              <select name="type" defaultValue="FS" aria-label="Tipo">{(Object.keys(DEP_TYPE_LABEL) as (keyof typeof DEP_TYPE_LABEL)[]).map((t) => <option key={t} value={t}>{DEP_TYPE_LABEL[t]}</option>)}</select>
+              <input name="lag" type="number" min={-36500} max={36500} defaultValue={0} aria-label="Desfase en días hábiles" style={{ width: 80 }} />
+              <button style={{ marginTop: 0 }}>{dir === 'pred' ? 'Agregar predecesora' : 'Agregar sucesora'}</button>
+            </form>
+          );
+          return (
+            <details key={a.id} id={`dep-${a.id}`} open={sp.open === a.id} style={{ borderTop: '1px solid var(--border, #ddd)', padding: '6px 0' }}>
+              <summary>{actLabel(i, a.name)} — {preds.length} predecesora(s), {succs.length} sucesora(s)</summary>
+              <h3>Predecesoras</h3>
+              {preds.length === 0 ? <p>Ninguna.</p> : <ul>{preds.map((d) => row(d, label(d.predecessor_id)))}</ul>}
+              {canEditData === true && addForm('pred', predecessorCandidates(acts ?? [], deps ?? [], a.id))}
+              <h3>Sucesoras</h3>
+              {succs.length === 0 ? <p>Ninguna.</p> : <ul>{succs.map((d) => row(d, label(d.successor_id)))}</ul>}
+              {canEditData === true && addForm('succ', successorCandidates(acts ?? [], deps ?? [], a.id))}
+            </details>
+          );
+        })}
       </div>
       <div className="card"><ImportCsv projectId={id} /></div>
       <form action={addActivity} className="card">

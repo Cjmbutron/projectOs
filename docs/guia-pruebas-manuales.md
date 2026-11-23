@@ -1,4 +1,4 @@
-# Guía de pruebas manuales (entregas 10 a 29)
+# Guía de pruebas manuales (entregas 10 a 31)
 
 Para probar en **tu Supabase real** lo que hasta ahora solo se probó con un reemplazo local. Marca cada punto y
 anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige rápido.
@@ -16,6 +16,13 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] Redimensionar una barra cambia su duración en días laborables (con el ratón y con Mayús+flechas).
 - [ ] «Crear dependencia»: elige predecesora y sucesora, prueba FS/SS/FF/SF; un ciclo debe rechazarse con mensaje.
 - [ ] Como miembro sin permiso de edición, el Gantt es de solo lectura.
+
+### Dependencias por actividad (entrega 31) — `/projects/<id>`, sección «Dependencias»
+- [ ] Cada actividad aparece numerada («3. Nombre») y se abre para ver sus predecesoras y sucesoras.
+- [ ] «Agregar predecesora» y «Agregar sucesora»: la lista no ofrece la propia actividad, las ya relacionadas ni las que crearían un ciclo.
+- [ ] Cambia el tipo o el desfase de una dependencia y guarda; después de recalcular, las fechas cambian como corresponde.
+- [ ] Tras agregar, cambiar o quitar, el panel de esa actividad sigue abierto.
+- [ ] Como miembro sin permiso de edición, ves las dependencias pero no los formularios.
 
 ## 2. Charter, línea base, salud, requisitos (entregas 11–14)
 - [ ] `/charter`: no pasa de borrador a propuesto sin objetivos, alcance y al menos un stakeholder.
