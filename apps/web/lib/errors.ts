@@ -37,6 +37,8 @@ const MESSAGES: Record<string, string> = {
   resource_in_use: 'El recurso tiene asignaciones: desactívalo en lugar de eliminarlo.',
   duplicate_assignment: 'Ese recurso ya está asignado a la actividad.',
   invalid_assignment: 'No se pudo asignar: revisa la actividad y el recurso.',
+  invalid_day: 'Revisa las fechas: deben ser reales, el fin no puede ser anterior al inicio (máximo 366 días), y un feriado necesita nombre de hasta 120 caracteres.',
+  duplicate_day: 'Ya hay un día registrado en alguna de esas fechas.',
   invalid_credentials: 'Correo o contraseña incorrectos.',
   account_locked: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
   email_not_confirmed: 'Confirma tu correo con el enlace que te enviamos.',

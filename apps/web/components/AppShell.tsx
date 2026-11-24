@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LogoutButton } from '@/components';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { activeHref, NAV_ITEMS } from '@/lib/nav';
 
 /** Barra lateral + cabecera. En pantallas estrechas la barra se abre con un botón y se cierra al navegar. */
@@ -22,6 +23,7 @@ export function AppShell({ who, children }: { who: string | null; children: Reac
       <div className="shell-main">
         <header className="topbar">
           <button type="button" className="secondary menu-toggle" aria-controls="sidebar" aria-expanded={open} onClick={() => setOpen((v) => !v)}>Menú</button>
+          <GlobalSearch />
           <span className="who">{who ?? ''}</span>
           <LogoutButton />
         </header>

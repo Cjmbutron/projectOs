@@ -1,4 +1,4 @@
-# Guía de pruebas manuales (entregas 10 a 33)
+# Guía de pruebas manuales (entregas 10 a 34)
 
 Para probar en **tu Supabase real** lo que hasta ahora solo se probó con un reemplazo local. Marca cada punto y
 anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige rápido.
@@ -34,6 +34,33 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] (Entrega 33) En `/projects`: tarjetas de Proyectos, En riesgo, Avance medio y Mis actividades vencidas; las cifras coinciden con la lista y con «Mis actividades».
 - [ ] Mensajes de error y de éxito en recuadros; tablas con botones alineados; en móvil las tablas se desplazan lateralmente y ya no ocultan columnas.
 - [ ] Anota cualquier texto ilegible, color que no se distinga o pantalla que se vea «sin estilo».
+
+### Tablero Kanban (entrega 34) — `/projects/<id>/board`
+- [ ] Las actividades aparecen en Sin iniciar, En curso y Terminada según su estado, con porcentaje, fechas y responsable.
+- [ ] Arrastrar una tarjeta a otra columna cambia su estado; también con el selector «Mover» (sirve con teclado). Comprueba que el avance del proyecto se actualiza.
+- [ ] «En curso» registra 1 % si venía de Sin iniciar y 99 % si venía de Terminada.
+- [ ] Un hito no se puede mover a En curso (no aparece la opción).
+- [ ] Como colaborador solo mueves tus actividades; las demás no se pueden arrastrar. En un proyecto cerrado nada se mueve.
+- [ ] Vencidas y «Vence pronto» se ven con su insignia.
+
+### Calendario y feriados (entrega 36) — `/projects/<id>/calendar` (enlace «Calendario →» en el proyecto)
+- [ ] Se ve la lista de feriados y días trabajados del año; el selector de año cambia la lista.
+- [ ] Agregar un feriado de un día con nombre: aparece en la lista. Sin nombre no se deja guardar.
+- [ ] Agregar un rango (por ejemplo, de viernes a lunes): se guardan solo los días laborables; el mensaje dice cuántos se omitieron por caer en fin de semana.
+- [ ] Agregar un «día trabajado excepcional» en un sábado: aparece con su insignia. En un día que ya es laborable se omite.
+- [ ] Repetir una fecha ya registrada no la duplica (el mensaje dice cuántas ya estaban).
+- [ ] «Feriados nacionales de Bolivia sugeridos»: revisa fechas y nombres contra el decreto del año, corrige las que difieran y guarda los marcados. Los que caen en fin de semana o ya existen vienen sin marcar.
+- [ ] Después de guardar, el proyecto muestra el cronograma como desactualizado; al recalcular, las fechas saltan los feriados nuevos.
+- [ ] Eliminar un día lo quita. Un colaborador sin permiso de cronograma ve el calendario pero no los formularios. En un proyecto cerrado todo queda en solo lectura.
+
+### Búsqueda global (entrega 35) — cabecera, en cualquier pantalla
+- [ ] Pulsa «/» fuera de un campo: el cursor va a la caja de búsqueda. Con 1 carácter dice «Escribe al menos 2 caracteres».
+- [ ] Escribe parte del nombre o del código de un proyecto: aparece en «Proyectos». Escribe parte del nombre de una actividad: aparece en «Actividades» con el nombre de su proyecto.
+- [ ] Flechas ↑ ↓ cambian el resultado resaltado, Enter lo abre, Escape cierra el panel (y una segunda vez vacía la caja).
+- [ ] Un proyecto abre su pantalla; una actividad abre su proyecto con el panel de dependencias de esa actividad desplegado.
+- [ ] Busca `%` o `_` solos o dentro de un texto: se toman como caracteres normales, no como comodín.
+- [ ] Con otro usuario (p. ej. un externo o de otra organización) no aparecen proyectos que no puede leer; un proyecto en la papelera o archivado no aparece.
+- [ ] En el móvil el panel ocupa el ancho de la pantalla y no aparece barra de desplazamiento horizontal.
 
 ## 2. Charter, línea base, salud, requisitos (entregas 11–14)
 - [ ] `/charter`: no pasa de borrador a propuesto sin objetivos, alcance y al menos un stakeholder.
