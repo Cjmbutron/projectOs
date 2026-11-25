@@ -43,6 +43,15 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] Como colaborador solo mueves tus actividades; las demás no se pueden arrastrar. En un proyecto cerrado nada se mueve.
 - [ ] Vencidas y «Vence pronto» se ven con su insignia.
 
+### Notas en las tarjetas del Kanban (entrega 38) — `/projects/<id>/board`
+- [ ] Cada tarjeta tiene «Notas (n)». Al abrirla se ven las notas con autor, fecha y hora (en tu zona horaria) y, si puedes escribir, un cuadro para una nota nueva. Con las notas abiertas la tarjeta no se arrastra (para poder seleccionar texto); ciérralas para arrastrar.
+- [ ] Agregar una nota: la pantalla vuelve a la misma tarjeta con las notas abiertas. Una nota vacía o de más de 2 000 caracteres muestra un aviso.
+- [ ] «Editar» (solo en tus notas) cambia el texto y marca «editada». «Eliminar» borra la tuya; PM y líder técnico pueden borrar cualquiera, pero no editar las ajenas.
+- [ ] Un colaborador no ve «Editar» ni «Eliminar» en las notas de otros. Un visor interno lee las notas sin poder escribir.
+- [ ] Un cliente o un usuario externo no ve ninguna nota (ni el aviso «Notas»).
+- [ ] En un proyecto cerrado o cancelado las notas se leen pero no se agregan, editan ni borran.
+- [ ] Si sacas a una persona del proyecto, deja de poder escribir, editar o borrar, pero sus notas quedan.
+
 ### Matriz RACI (entrega 37) — `/projects/<id>/raci` (enlace «Matriz RACI →» en el proyecto)
 - [ ] Filas = entregables (con su código de la WBS), columnas = miembros del proyecto. Arriba: entregables, con R y A, incompletos y personas.
 - [ ] Como PM o líder técnico, elige R, A, A/R, C o I en una o varias celdas de una fila y pulsa «Guardar» de esa fila: el mensaje dice cuántos cambios se guardaron y la insignia pasa de «Falta R y A» a «Completa» cuando hay al menos un R y un A.

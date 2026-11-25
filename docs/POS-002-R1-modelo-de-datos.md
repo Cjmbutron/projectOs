@@ -141,6 +141,19 @@
 | `lag` | integer | no | `0` |
 | `created_at` | timestamp with time zone | no | `now()` |
 
+### `activity_notes`
+
+| Columna | Tipo | Nulo | Por defecto |
+|---|---|---|---|
+| `id` | uuid | no | `gen_random_uuid()` |
+| `organization_id` | uuid | no |  |
+| `project_id` | uuid | no |  |
+| `activity_id` | uuid | no |  |
+| `author_id` | uuid | sí | `auth.uid()` |
+| `body` | text | no |  |
+| `created_at` | timestamp with time zone | no | `now()` |
+| `updated_at` | timestamp with time zone | no | `now()` |
+
 ### `activity_resources`
 
 | Columna | Tipo | Nulo | Por defecto |
@@ -594,6 +607,7 @@ Roles. organization_id NULL = plantilla del sistema (inmutable).
 | `can_edit_schedule(p_project uuid)` | usuarios autenticados |
 | `can_edit_scope(p_project uuid)` | usuarios autenticados |
 | `can_manage_resources(p_org uuid)` | usuarios autenticados |
+| `can_write_notes(p_project uuid)` | usuarios autenticados |
 | `change_member_role(p_org uuid, p_user uuid, p_role uuid)` | usuarios autenticados |
 | `change_project_member_role(p_project uuid, p_user uuid, p_role uuid)` | usuarios autenticados |
 | `change_project_status(p_project uuid, p_status text, p_reason text)` | usuarios autenticados |
@@ -639,6 +653,10 @@ Roles. organization_id NULL = plantilla del sistema (inmutable).
 | `activity_dependencies` | dependencies_insert | INSERT | authenticated |
 | `activity_dependencies` | dependencies_read | SELECT | authenticated |
 | `activity_dependencies` | dependencies_update | UPDATE | authenticated |
+| `activity_notes` | activity_notes_delete | DELETE | authenticated |
+| `activity_notes` | activity_notes_insert | INSERT | authenticated |
+| `activity_notes` | activity_notes_read | SELECT | authenticated |
+| `activity_notes` | activity_notes_update | UPDATE | authenticated |
 | `activity_resources` | activity_resources_delete | DELETE | authenticated |
 | `activity_resources` | activity_resources_insert | INSERT | authenticated |
 | `activity_resources` | activity_resources_read | SELECT | authenticated |

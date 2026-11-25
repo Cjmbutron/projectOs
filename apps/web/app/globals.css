@@ -31,9 +31,9 @@ main{width:100%;max-width:1080px;margin:0 auto;padding:24px 16px}
 /* ---------- Componentes ---------- */
 .card{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
 label{display:block;font-size:.8125rem;color:var(--muted);margin:12px 0 4px}
-input,select{width:100%;padding:9px 10px;border:1px solid var(--field);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);font:inherit}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--field);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);font:inherit}
 input[type=checkbox]{width:auto}
-input::placeholder{color:var(--muted)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
 button{padding:9px 16px;border:1px solid transparent;border-radius:var(--radius-sm);background:var(--accent);color:var(--accent-fg);font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
 button:hover:not(:disabled){filter:brightness(1.08)}
 button:disabled{opacity:.6;cursor:wait}
@@ -157,3 +157,18 @@ table.raci tbody th[scope=row]{text-transform:none;letter-spacing:0;font-size:.8
 .raci-R select,.raci-AR select,.raci-R>span,.raci-AR>span{border-color:#3B82F6}
 .raci-A select,.raci-A>span{border-color:#F59E0B}
 @media(max-width:700px){table.raci tbody th[scope=row]{min-width:160px}}
+
+/* Notas en las tarjetas */
+.notes{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.notes>summary{cursor:pointer;color:var(--link);font-size:.8125rem;font-weight:600}
+.note-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.note{background:rgba(15,23,42,.6);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px}
+.note-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.75rem;color:var(--muted)}
+.note-head strong{color:var(--text)}
+.note-body{margin:4px 0 0;color:var(--fg);white-space:pre-wrap;overflow-wrap:anywhere;font-size:.875rem}
+.note-actions{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-top:6px}
+.note-actions form{margin:0}
+.note-actions button,.note-new button{margin-top:6px;padding:4px 10px;font-size:.8125rem}
+.note-edit>summary{cursor:pointer;color:var(--link);font-size:.8125rem}
+.notes textarea{width:100%;min-height:72px;resize:vertical;font:inherit;font-size:.875rem}
+.note-new{margin-top:10px}

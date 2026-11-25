@@ -41,6 +41,7 @@ const MESSAGES: Record<string, string> = {
   raci_not_member: 'Esa persona ya no es miembro del proyecto.',
   invalid_raci: 'Combinación no válida. Usa R, A, A/R, C o I (una sola por persona).',
   raci_deliverable_not_found: 'No encontramos ese entregable.',
+  invalid_note: 'La nota no puede estar vacía ni pasar de 2 000 caracteres.',
   invalid_day: 'Revisa las fechas: deben ser reales, el fin no puede ser anterior al inicio (máximo 366 días), y un feriado necesita nombre de hasta 120 caracteres.',
   duplicate_day: 'Ya hay un día registrado en alguna de esas fechas.',
   invalid_credentials: 'Correo o contraseña incorrectos.',

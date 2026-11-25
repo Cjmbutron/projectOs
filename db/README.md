@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **1225 pruebas, 0 fallos; 146 de 147 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las de las migraciones 2600, 2700 y 2800 se corrieron aparte; el único sobreviviente es una guarda redundante, ver 2700).
+Estado actual: **1285 pruebas, 0 fallos; 163 de 164 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las de las migraciones 2600 a 2900 se corrieron aparte; el único sobreviviente es una guarda redundante, ver 2700).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -133,3 +133,9 @@ Estado actual: **1225 pruebas, 0 fallos; 146 de 147 mutaciones detectadas** (122
 - Solo se escribe con `raci_set_cell(entregable, persona, letras[])` (reemplaza lo que la persona tenía; lista vacía o NULL la quita). Exige `scope.edit` (PM y líder técnico), proyecto abierto y que la persona sea miembro del proyecto. La tabla no tiene permisos de escritura directa. Lectura: como los entregables (RLS `can_read_project`). Auditada; las filas se van al sacar a la persona del proyecto o borrar el entregable.
 - `public.can_edit_scope(proyecto)`: lo que consulta la interfaz para mostrar el formulario.
 - Independiente del campo «responsable» del entregable (no se sincronizan).
+
+### 2900 · Notas en las actividades (tarjetas del Kanban)
+- Tabla `activity_notes`: varias notas por actividad (1–2 000 caracteres, no en blanco), con autor y fecha; `updated_at` se actualiza al editar.
+- **Lectura:** solo miembros internos activos de la organización con acceso al proyecto (también un visor interno). Clientes y externos (invitados) no las ven. **Escritura:** además `schedule.edit` o rol PM / líder técnico / colaborador en el proyecto. Cada quien edita (solo el texto) y borra las suyas; quien tiene `schedule.edit` borra cualquiera. En proyecto cerrado o cancelado: solo lectura. Quien sale del proyecto ya no escribe, edita ni borra.
+- `public.can_write_notes(proyecto)`: lo que consulta la interfaz (la decisión real la toma RLS). Auditada; se borran con la actividad.
+- Dos capas redundantes a propósito, por lo que sus mutaciones no se cuentan: que el autor no se pueda falsificar está garantizado tanto por la concesión de columnas (sin `author_id`) como por la política de inserción.

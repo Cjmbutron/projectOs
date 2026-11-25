@@ -432,6 +432,54 @@ mutate "raci: la interfaz siempre ofrece editar" 2800_raci.sql \
   "select coalesce(private.can_read_project(p_project) and private.has_project_permission(p_project, 'scope.edit'), false)" "select true"
 mutate "raci: la interfaz ofrece editar a quien solo lee" 2800_raci.sql \
   "select coalesce(private.can_read_project(p_project) and private.has_project_permission(p_project, 'scope.edit'), false)" "select coalesce(private.can_read_project(p_project), false)"
+mutate "notas: las lee cualquiera con acceso (incluye externos)" 2900_activity_notes.sql \
+  "and m.status = 'active' and m.membership_type = 'internal'
+    where p.id = p_project and p.deleted_at is null)
+\$\$;
+revoke all on function private.can_read_notes" "and m.status = 'active'
+    where p.id = p_project and p.deleted_at is null)
+\$\$;
+revoke all on function private.can_read_notes"
+mutate "notas: un visor escribe" 2900_activity_notes.sql \
+  "r.key in ('project_manager', 'team_lead', 'contributor')
+      where pm.project_id = p_project and pm.user_id = auth.uid()))" "r.key in ('project_manager', 'team_lead', 'contributor', 'viewer')
+      where pm.project_id = p_project and pm.user_id = auth.uid()))"
+mutate "notas: escribir sin ser miembro con rol" 2900_activity_notes.sql \
+  "select private.can_read_notes(p_project) and (" "select private.can_read_notes(p_project) and (true or"
+mutate "notas: se escribe en proyecto cerrado" 2900_activity_notes.sql \
+  "with check (private.can_write_notes(project_id) and author_id = auth.uid() and private.project_is_writable(project_id));" "with check (private.can_write_notes(project_id) and author_id = auth.uid());"
+mutate "notas: cualquiera edita la de otro" 2900_activity_notes.sql \
+  "using (author_id = auth.uid() and private.can_write_notes(project_id) and private.project_is_writable(project_id))
+  with check" "using (private.can_write_notes(project_id) and private.project_is_writable(project_id))
+  with check"
+mutate "notas: se edita aunque el proyecto esté cerrado" 2900_activity_notes.sql \
+  "using (author_id = auth.uid() and private.can_write_notes(project_id) and private.project_is_writable(project_id))" "using (author_id = auth.uid() and private.can_write_notes(project_id))"
+mutate "notas: se puede cambiar más que el texto" 2900_activity_notes.sql \
+  "grant update (body) on public.activity_notes to authenticated;" "grant update (body, activity_id) on public.activity_notes to authenticated;"
+mutate "notas: el colaborador borra las de otros" 2900_activity_notes.sql \
+  "and ((author_id = auth.uid() and private.can_write_notes(project_id))
+              or coalesce(private.has_project_permission(project_id, 'schedule.edit'), false)));" "and true);"
+mutate "notas: el PM no puede borrar las de otros" 2900_activity_notes.sql \
+  "
+              or coalesce(private.has_project_permission(project_id, 'schedule.edit'), false)));" "));"
+mutate "notas: se borra en proyecto cerrado" 2900_activity_notes.sql \
+  "using (private.project_is_writable(project_id) and private.can_read_notes(project_id)" "using (private.can_read_notes(project_id)"
+mutate "notas: quien salió del proyecto borra las suyas" 2900_activity_notes.sql \
+  "((author_id = auth.uid() and private.can_write_notes(project_id))" "((author_id = auth.uid())"
+mutate "notas: lectura abierta a todos" 2900_activity_notes.sql \
+  "using (private.can_read_notes(project_id));" "using (true);"
+mutate "notas: acepta cuerpo en blanco" 2900_activity_notes.sql \
+  "check (body ~ '\\S' and char_length(body) <= 2000)" "check (char_length(body) <= 2000)"
+mutate "notas: sin tope de longitud" 2900_activity_notes.sql \
+  "and char_length(body) <= 2000)" ")"
+mutate "notas: no cambia la fecha de edición" 2900_activity_notes.sql \
+  "create trigger activity_notes_touch before update on public.activity_notes
+  for each row execute function private.touch_updated_at();" ""
+mutate "notas: sin auditoría" 2900_activity_notes.sql \
+  "create trigger activity_notes_audit after insert or update or delete on public.activity_notes
+  for each row execute function private.audit_trigger();" ""
+mutate "notas: la interfaz siempre ofrece escribir" 2900_activity_notes.sql \
+  "as \$\$ select coalesce(private.can_write_notes(p_project), false) \$\$;" "as \$\$ select true \$\$;"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]
