@@ -43,6 +43,14 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] Como colaborador solo mueves tus actividades; las demás no se pueden arrastrar. En un proyecto cerrado nada se mueve.
 - [ ] Vencidas y «Vence pronto» se ven con su insignia.
 
+### Matriz RACI (entrega 37) — `/projects/<id>/raci` (enlace «Matriz RACI →» en el proyecto)
+- [ ] Filas = entregables (con su código de la WBS), columnas = miembros del proyecto. Arriba: entregables, con R y A, incompletos y personas.
+- [ ] Como PM o líder técnico, elige R, A, A/R, C o I en una o varias celdas de una fila y pulsa «Guardar» de esa fila: el mensaje dice cuántos cambios se guardaron y la insignia pasa de «Falta R y A» a «Completa» cuando hay al menos un R y un A.
+- [ ] Un solo A por entregable: darle el A a otra persona mientras alguien más lo tiene muestra el error; quitárselo a la primera y dárselo a la segunda en el mismo guardado sí funciona.
+- [ ] Un colaborador o un visor ve la matriz en texto, sin listas desplegables ni botones.
+- [ ] Si sacas a un miembro del proyecto, su columna desaparece. En un proyecto cerrado todo queda en solo lectura.
+- [ ] «Responsable asignado» (campo del entregable en la WBS) se muestra aparte y no cambia al editar la matriz.
+
 ### Calendario y feriados (entrega 36) — `/projects/<id>/calendar` (enlace «Calendario →» en el proyecto)
 - [ ] Se ve la lista de feriados y días trabajados del año; el selector de año cambia la lista.
 - [ ] Agregar un feriado de un día con nombre: aparece en la lista. Sin nombre no se deja guardar.

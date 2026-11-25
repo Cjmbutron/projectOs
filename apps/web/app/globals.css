@@ -142,3 +142,18 @@ button.danger{background:transparent;color:var(--danger);border:1px solid rgba(2
 .board-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:.8125rem;color:var(--muted);margin-top:6px;align-items:center}
 .board-move{display:flex;gap:6px;margin-top:8px}.board-move select{padding:5px 8px;font-size:.8125rem}.board-move button{margin-top:0;padding:5px 10px;font-size:.8125rem}
 @media(max-width:860px){.board{grid-template-columns:minmax(0,1fr)}}
+
+/* Matriz RACI */
+.raci-wrap{overflow-x:auto;padding:0}
+table.raci{border-collapse:separate;border-spacing:0;min-width:100%}
+table.raci th,table.raci td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle;text-align:left}
+table.raci thead th{position:sticky;top:0;background:var(--surface);font-size:.75rem;white-space:nowrap}
+table.raci tbody th[scope=row]{text-transform:none;letter-spacing:0;font-size:.875rem;position:sticky;left:0;background:var(--surface);min-width:220px;max-width:320px;font-weight:500;z-index:1;border-right:1px solid var(--line)}
+.raci-code{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:6px}
+.raci-resp{display:block;color:var(--muted);font-size:.75rem;font-weight:400;margin-top:2px}
+.raci-cell{min-width:84px;text-align:center}
+.raci-cell select{width:100%;min-width:0;padding:6px 8px;font-size:.8125rem}
+.raci-cell>span{font-weight:700}
+.raci-R select,.raci-AR select,.raci-R>span,.raci-AR>span{border-color:#3B82F6}
+.raci-A select,.raci-A>span{border-color:#F59E0B}
+@media(max-width:700px){table.raci tbody th[scope=row]{min-width:160px}}

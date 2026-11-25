@@ -42,7 +42,7 @@ db/tests/mutation_check.sh   # introduce 76 defectos deliberados; todos deben se
 db/tools/gen_dictionary.sh > docs/POS-002-modelo-de-datos.md   # regenera el diccionario
 ```
 
-Estado actual: **1160 pruebas, 0 fallos; 132 de 133 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las de las migraciones 2600 y 2700 se corrieron aparte; el único sobreviviente es una guarda redundante, ver 2700).
+Estado actual: **1225 pruebas, 0 fallos; 146 de 147 mutaciones detectadas** (122 en la corrida completa previa a la 2600; las de las migraciones 2600, 2700 y 2800 se corrieron aparte; el único sobreviviente es una guarda redundante, ver 2700).
 
 ## Limitaciones conocidas (leer antes de confiar)
 
@@ -127,3 +127,9 @@ Estado actual: **1160 pruebas, 0 fallos; 132 de 133 mutaciones detectadas** (122
 - Decisión del 21-nov-2026: sustituye la regla de la 2600. Asigna, cambia la dedicación o quita recursos en **cualquier** actividad quien tiene `schedule.edit` o es miembro del proyecto con rol `project_manager`, `team_lead` o `contributor` **y** miembro interno activo de la organización. Quedan fuera `client_stakeholder`, `viewer`, externos y suspendidos. No toca fechas ni el resto del cronograma.
 - `public.can_assign_resources(proyecto)`: lo que consulta la interfaz para mostrar el formulario (la decisión real la toma RLS).
 - Mutante sobreviviente conocido: quitar `can_read_project` de esa función pública no cambia ningún resultado observable (quien puede asignar siempre puede leer); queda como guarda redundante.
+
+### 2800 · Matriz RACI por entregable
+- Tabla `raci_assignments` (entregable, miembro del proyecto, letra R/A/C/I). Cada persona tiene en un entregable una sola de estas combinaciones: R, A, A+R, C o I. **Un solo A por entregable** (función y, de respaldo, índice único parcial). «Al menos un R y un A» no se exige en la base de datos: la pantalla lo señala como «Completa/Falta…».
+- Solo se escribe con `raci_set_cell(entregable, persona, letras[])` (reemplaza lo que la persona tenía; lista vacía o NULL la quita). Exige `scope.edit` (PM y líder técnico), proyecto abierto y que la persona sea miembro del proyecto. La tabla no tiene permisos de escritura directa. Lectura: como los entregables (RLS `can_read_project`). Auditada; las filas se van al sacar a la persona del proyecto o borrar el entregable.
+- `public.can_edit_scope(proyecto)`: lo que consulta la interfaz para mostrar el formulario.
+- Independiente del campo «responsable» del entregable (no se sincronizan).

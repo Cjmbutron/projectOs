@@ -403,6 +403,35 @@ mutate "asignar: la interfaz ofrece asignar a quien no puede leer el proyecto" 2
   "select coalesce(private.can_read_project(p_project) and private.can_assign_resources(p_project, null), false)" "select coalesce(private.can_assign_resources(p_project, null), false)"
 mutate "asignar: la interfaz siempre ofrece asignar" 2700_members_assign_resources.sql \
   "select coalesce(private.can_read_project(p_project) and private.can_assign_resources(p_project, null), false)" "select true"
+mutate "raci: sin comprobar scope.edit" 2800_raci.sql \
+  "perform private.wbs_authorize(v_project);" "perform private.require_auth();"
+mutate "raci: acepta a quien no es miembro del proyecto" 2800_raci.sql \
+  "if not exists (select 1 from public.project_members where project_id = v_project and user_id = p_user) then" "if false then"
+mutate "raci: permite dos aprobadores" 2800_raci.sql \
+  "if 'A' = any (v_roles) and exists (" "if false and exists ("
+mutate "raci: el aprobador se bloquea a sí mismo" 2800_raci.sql \
+  "role = 'A' and user_id <> p_user) then" "role = 'A') then"
+mutate "raci: sin índice de un solo aprobador" 2800_raci.sql \
+  "create unique index raci_one_accountable_uq on public.raci_assignments (deliverable_id) where role = 'A';" "create index raci_one_accountable_uq on public.raci_assignments (deliverable_id) where role = 'A';"
+mutate "raci: acepta combinaciones inválidas (C con I)" 2800_raci.sql \
+  "if v_roles not in ('{}', '{R}', '{A}', '{A,R}', '{C}', '{I}') then" "if false then"
+mutate "raci: no reemplaza, suma" 2800_raci.sql \
+  "delete from public.raci_assignments where deliverable_id = p_deliverable and user_id = p_user and role <> all (v_roles);" ""
+mutate "raci: quitar no borra" 2800_raci.sql \
+  "and role <> all (v_roles);" "and role <> all (v_roles) and false;"
+mutate "raci: la persona no se cae al salir del proyecto" 2800_raci.sql \
+  "foreign key (project_id, user_id) references public.project_members (project_id, user_id) on delete cascade" "foreign key (project_id, user_id) references public.project_members (project_id, user_id) on delete no action"
+mutate "raci: lectura abierta a todos" 2800_raci.sql \
+  "using (private.can_read_project(project_id));" "using (true);"
+mutate "raci: escritura directa permitida" 2800_raci.sql \
+  "grant select on public.raci_assignments to authenticated;" "grant select, insert, delete on public.raci_assignments to authenticated;"
+mutate "raci: sin auditoría" 2800_raci.sql \
+  "create trigger raci_assignments_audit after insert or delete on public.raci_assignments
+  for each row execute function private.audit_trigger();" ""
+mutate "raci: la interfaz siempre ofrece editar" 2800_raci.sql \
+  "select coalesce(private.can_read_project(p_project) and private.has_project_permission(p_project, 'scope.edit'), false)" "select true"
+mutate "raci: la interfaz ofrece editar a quien solo lee" 2800_raci.sql \
+  "select coalesce(private.can_read_project(p_project) and private.has_project_permission(p_project, 'scope.edit'), false)" "select coalesce(private.can_read_project(p_project), false)"
 echo "----"
 echo "Mutaciones: $total · sobrevivientes: $survivors"
 [ "$survivors" -eq 0 ]
