@@ -39,8 +39,8 @@ export function KanbanBoard({ projectId, cards, action, noteActions, openNotes }
             <h2 className="board-title">{col.label} <span className="badge badge-neutral">{items.length}</span></h2>
             {items.length === 0 && <p className="empty">Sin actividades</p>}
             {items.map((c) => (
-              <article key={c.id} id={`card-${c.id}`} className="board-card" draggable={c.canMove && !opened.has(c.id)} onDragStart={() => { dragged.current = c.id; }} onDragEnd={() => { dragged.current = null; setOver(null); }}>
-                <strong>{c.name}</strong>
+              <article key={c.id} id={`card-${c.id}`} className={`board-card${c.status === 'done' ? ' is-done' : ''}`} draggable={c.canMove && !opened.has(c.id)} onDragStart={() => { dragged.current = c.id; }} onDragEnd={() => { dragged.current = null; setOver(null); }}>
+                <strong>{c.status === 'done' && <span aria-hidden="true">✓ </span>}{c.name}{c.status === 'done' && <span className="sr-only"> (terminada)</span>}</strong>
                 <div className="board-meta"><span>{c.percent} %</span>{c.duration === 0 && <span>Hito</span>}{c.assignee && <span>{c.assignee}</span>}</div>
                 <div className="board-meta"><span>{c.dates}</span>{c.badge && <span className={`badge ${c.badge.cls}`}>{c.badge.text}</span>}</div>
                 {c.canMove && c.moves.length > 0 && (

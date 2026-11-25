@@ -43,6 +43,15 @@ anota lo que falle (pantalla, qué hiciste, mensaje exacto). Con eso se corrige 
 - [ ] Como colaborador solo mueves tus actividades; las demás no se pueden arrastrar. En un proyecto cerrado nada se mueve.
 - [ ] Vencidas y «Vence pronto» se ven con su insignia.
 
+### Lista de actividades: grupos, fechas y avance (entrega 39) — `/projects/<id>`
+1. Las actividades aparecen agrupadas por nodo de la WBS (orden 1, 1.2, 1.10…), con una fila de grupo que muestra cuántas actividades hay, cuántas terminadas y su avance planificado/ejecutado. Las que no tienen nodo van al final en «Sin grupo de la WBS».
+2. Dentro de cada grupo van ordenadas por fecha de inicio (luego fin); sin fechas al final. Crear una actividad nueva no la deja al final si sus fechas son anteriores.
+3. Columnas «Plan.» (planificado a hoy) y «Ejec.» (ejecutado). Insignia verde «Al día/Adelantado», ámbar «Atrasado 1–9 pts», roja «Atrasado ≥10 pts». Comprueba a mano una actividad: días hábiles transcurridos ÷ días hábiles totales (feriados cuentan como no laborables).
+4. Con línea base, el texto bajo el avance dice «sobre las fechas de la línea base vN»; sin ella, «sobre el cronograma actual».
+5. Fechas con formato «Mié-25/11/26» en: lista del proyecto, tarjetas del Kanban, Mis actividades, Líneas base (tabla de versiones) y Calendario. Los campos de fecha editables conservan el selector del navegador. El eje del Gantt no cambió.
+6. Actividades terminadas (100 %): fila verde con «✓» en la lista y tarjeta verde con «✓» en el Kanban.
+7. Editar actividad (quien puede editar el cronograma): bajo el nombre, «Editar» abre nombre, duración y grupo de la WBS. Asigna una actividad sin grupo a un nodo y guarda: pasa a ese grupo y se queda en su fila. «(ninguno)» la saca de la WBS. Un miembro sin permiso de cronograma no ve «Editar». Tras cambiar la duración, recalcula el cronograma.
+
 ### Notas en las tarjetas del Kanban (entrega 38) — `/projects/<id>/board`
 - [ ] Cada tarjeta tiene «Notas (n)». Al abrirla se ven las notas con autor, fecha y hora (en tu zona horaria) y, si puedes escribir, un cuadro para una nota nueva. Con las notas abiertas la tarjeta no se arrastra (para poder seleccionar texto); ciérralas para arrastrar.
 - [ ] Agregar una nota: la pantalla vuelve a la misma tarjeta con las notas abiertas. Una nota vacía o de más de 2 000 caracteres muestra un aviso.

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatDay } from '@/lib/dates';
 import { redirect } from 'next/navigation';
 import { messageFor } from '@/lib/errors';
 import { DEADLINE_LABEL, deadlineState, groupByProject, sortByDue, type MyActivity } from '@/lib/my-activities';
@@ -47,7 +48,7 @@ export default async function MyActivities({ searchParams }: { searchParams: Pro
                 const d = deadlineState(a.early_finish, a.status, now);
                 return (
                   <tr key={a.id}>
-                    <td>{a.name}</td><td>{a.early_start ?? '—'}</td><td>{a.early_finish ?? '—'}</td>
+                    <td>{a.name}</td><td>{formatDay(a.early_start)}</td><td>{formatDay(a.early_finish)}</td>
                     <td className={d === 'overdue' ? 'err' : undefined}>{DEADLINE_LABEL[d]}</td>
                     <td>
                       <span>{a.percent_complete} % · {STATUS_LABEL[a.status] ?? a.status}</span>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatDay } from '@/lib/dates';
 import { addDays, addSuggested, removeDay } from '@/app/projects/[id]/calendar/actions';
 import { MAX_RANGE_DAYS, planDays, suggestedHolidays, weekdayLabel } from '@/lib/calendar';
 import { messageFor } from '@/lib/errors';
@@ -46,7 +47,7 @@ export function CalendarView({ id, project, year, days, weekdays, canEdit, close
             <thead><tr><th>Fecha</th><th>Día</th><th>Tipo</th><th>Nombre</th>{canEdit && <th><span className="sr-only">Acciones</span></th>}</tr></thead>
             <tbody>{days.map((d) => (
               <tr key={d.id}>
-                <td>{d.day}</td><td>{weekdayLabel(d.day)}</td>
+                <td>{formatDay(d.day)}</td><td>{weekdayLabel(d.day)}</td>
                 <td><span className={`badge ${d.kind === 'holiday' ? 'badge-warn' : 'badge-info'}`}>{d.kind === 'holiday' ? 'Feriado' : 'Día trabajado'}</span></td>
                 <td>{d.name ?? ''}</td>
                 {canEdit && <td>

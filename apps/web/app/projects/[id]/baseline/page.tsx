@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatDay } from '@/lib/dates';
 import { notFound, redirect } from 'next/navigation';
 import { compareBaseline, formatVariance, type Status } from '@/lib/baseline/compare';
 import { messageFor } from '@/lib/errors';
@@ -67,7 +68,7 @@ export default async function BaselinePage({ params, searchParams }: { params: P
             <table><thead><tr><th>Versión</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Capturada</th></tr></thead>
               <tbody>{(baselines ?? []).map((b) => (
                 <tr key={b.id}><td><Link href={`/projects/${id}/baseline?v=${b.version}`}>v{b.version}{b.id === selected?.id ? ' ✓' : ''}</Link></td>
-                  <td>{b.name}</td><td>{b.project_start}</td><td>{b.project_finish}</td><td>{b.captured_at.slice(0, 10)}</td></tr>
+                  <td>{b.name}</td><td>{formatDay(b.project_start)}</td><td>{formatDay(b.project_finish)}</td><td>{formatDay(b.captured_at)}</td></tr>
               ))}</tbody></table>
           </div>
           {selected && comparison && (

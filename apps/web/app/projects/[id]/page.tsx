@@ -4,6 +4,10 @@ import { ImportCsv, RecalcButton } from '@/components';
 import { messageFor } from '@/lib/errors';
 import { UUID_RE } from '@/lib/http';
 import { loadRange, overloadedAmong, shortDate, type LoadRow } from '@/lib/load';
+import { parseActivityEdit } from '@/lib/activity-edit';
+import { compareCodes, groupActivities } from '@/lib/activity-groups';
+import { formatDay, formatRange, todayIso } from '@/lib/dates';
+import { deviation, makeCalendar, plannedPercent, weightedAverage } from '@/lib/planned';
 import { canReportProgress, parseProgress, progressErrorCode, STATUS_LABEL } from '@/lib/progress';
 import { formatHours, parseAssignForm, resourceErrorCode } from '@/lib/resources';
 import { parseDependencyForm } from '@/lib/schedule/dependency-form';
@@ -24,6 +28,19 @@ async function addActivity(formData: FormData) {
     wbs_node_id: UUID_RE.test(String(formData.get('node') ?? '')) ? String(formData.get('node')) : null,
   });
   redirect(`/projects/${project}${error ? `?error=${encodeURIComponent(error.code ?? 'forbidden')}` : ''}`);
+}
+
+async function updateActivity(formData: FormData) {
+  'use server';
+  const project = String(formData.get('project'));
+  if (!UUID_RE.test(project)) redirect('/projects');
+  const e = parseActivityEdit(formData);
+  if (!e.ok) redirect(`/projects/${project}?error=${e.error}`);
+  const v = e as Extract<typeof e, { ok: true }>;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('activities').update({ name: v.name, duration: v.duration, wbs_node_id: v.nodeId })
+    .eq('id', v.activityId).eq('project_id', project).select('id');
+  redirect(`/projects/${project}${error ? `?error=${encodeURIComponent(error.code === '42501' ? 'forbidden' : error.code ?? 'forbidden')}` : !data?.length ? '?error=forbidden' : ''}#act-${v.activityId}`);
 }
 
 async function reportProgress(formData: FormData) {
@@ -132,15 +149,17 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const { data: project } = await supabase.from('projects').select('id,organization_id,code,name,status,progress_percent').eq('id', id).maybeSingle();
   if (!project) notFound();
   const [{ data: sched }, { data: acts }, { data: deps }, { data: nodes }] = await Promise.all([
-    supabase.from('project_schedules').select('start_date,schedule_version,computed_version,computed_start,computed_finish').eq('project_id', id).maybeSingle(),
+    supabase.from('project_schedules').select('start_date,schedule_version,computed_version,computed_start,computed_finish,working_weekdays').eq('project_id', id).maybeSingle(),
     supabase.from('activities').select('id,name,duration,early_start,early_finish,total_float,is_critical,wbs_node_id,status,percent_complete,assignee_id').eq('project_id', id).order('sort_order').order('created_at'),
     supabase.from('activity_dependencies').select('id,predecessor_id,successor_id,type,lag').eq('project_id', id).order('created_at'),
     supabase.from('wbs_nodes').select('id,code,name').eq('project_id', id),
   ]);
+  const { data: calDays } = await supabase.from('project_calendar_days').select('day,kind').eq('project_id', id);
+  const { data: lastBase } = await supabase.from('baselines').select('id,version,name').eq('project_id', id).order('version', { ascending: false }).limit(1).maybeSingle();
+  const { data: baseActs } = lastBase ? await supabase.from('baseline_activities').select('activity_id,start_date,finish_date,duration').eq('baseline_id', lastBase.id) : { data: null };
   const { data: canEditData } = await supabase.rpc('can_edit_schedule', { p_project: id });
   const { data: userData } = await supabase.auth.getUser();
   const me = userData.user?.id ?? null;
-  const nodeCode = new Map((nodes ?? []).map((n) => [n.id, n.code]));
   const nameOf = new Map((acts ?? []).map((a) => [a.id, a.name]));
   const [{ data: assigns }, { data: resList }] = await Promise.all([
     supabase.from('activity_resources').select('id,activity_id,resource_id,allocation_percent').eq('project_id', id).order('created_at'),
@@ -157,6 +176,23 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
     ? await supabase.rpc('resource_load', { p_org: project.organization_id, p_from: range.from, p_to: range.to })
     : null;
   const overloads = loadRes && !loadRes.error ? overloadedAmong((loadRes.data ?? []) as LoadRow[], assignedIds) : [];
+  // Avance planificado a hoy: fechas de la última línea base (si existe; lo no incluido usa el cronograma actual)
+  const today = todayIso(process.env.APP_TIMEZONE || 'America/La_Paz');
+  const isWorking = makeCalendar(sched?.working_weekdays ?? [1, 2, 3, 4, 5], calDays ?? []);
+  const baseOf = new Map((baseActs ?? []).map((b) => [b.activity_id, b]));
+  const rows = (acts ?? []).map((a) => {
+    const b = baseOf.get(a.id);
+    const plan = b ? { start: b.start_date as string | null, finish: b.finish_date as string | null, duration: Number(b.duration) } : { start: a.early_start as string | null, finish: a.early_finish as string | null, duration: Number(a.duration) };
+    return { ...a, planned: plannedPercent(plan, today, isWorking), actual: Number(a.percent_complete ?? 0), weight: Number(a.duration), done: a.status === 'done' };
+  });
+  const summarize = (xs: typeof rows) => {
+    const planned = weightedAverage(xs.map((x) => ({ value: x.planned, weight: x.weight })));
+    const actual = weightedAverage(xs.map((x) => ({ value: x.actual, weight: x.weight })));
+    return { planned, actual, dev: deviation(planned, actual), done: xs.filter((x) => x.done).length };
+  };
+  const total = summarize(rows);
+  const groups = groupActivities(rows, nodes ?? []);
+  const sortedNodes = [...(nodes ?? [])].sort((a, b) => compareCodes(a.code, b.code));
   const stale = sched && sched.computed_version !== sched.schedule_version;
   return (
     <main>
@@ -170,32 +206,53 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           <div><label htmlFor="start">Fecha de inicio</label><input id="start" type="date" name="start" defaultValue={sched?.start_date ?? ''} /></div>
           <button className="secondary">Guardar</button>
         </form>
-        <p>Avance del proyecto: <strong>{Number(project.progress_percent ?? 0)} %</strong> (ponderado por duración).</p>
-        <p>{sched?.computed_start ? `Plan: ${sched.computed_start} → ${sched.computed_finish}` : 'Sin calcular.'}{stale ? ' (desactualizado)' : ''}</p>
+        <p>Avance ejecutado: <strong>{Number(project.progress_percent ?? 0)} %</strong> · Avance planificado a hoy: <strong>{total.planned === null ? '—' : `${total.planned} %`}</strong> <span className={`badge ${total.dev.cls}`}>{total.dev.label}</span></p>
+        <p className="hint">Ponderado por duración. El planificado se calcula con días hábiles del calendario del proyecto, {lastBase ? `sobre las fechas de la línea base v${lastBase.version}${lastBase.name ? ` «${lastBase.name}»` : ''}` : 'sobre el cronograma actual (aún no hay línea base)'}. Hoy: {formatDay(today)}.</p>
+        <p>{sched?.computed_start ? `Plan: ${formatRange(sched.computed_start, sched.computed_finish)}` : 'Sin calcular.'}{stale ? ' (desactualizado)' : ''}</p>
         <RecalcButton projectId={id} />
       </div>
       <div className="card">
-        <table><thead><tr><th>Actividad</th><th>Días</th><th>Inicio</th><th>Fin</th><th>Holgura</th><th>WBS</th><th>Avance</th></tr></thead>
-          <tbody>{(acts ?? []).map((a) => (
-            <tr key={a.id}><td className={a.is_critical ? 'crit' : undefined}>{a.name}</td><td>{a.duration}</td>
-              <td>{a.early_start ?? '—'}</td><td>{a.early_finish ?? '—'}</td><td>{a.total_float ?? '—'}</td><td>{a.wbs_node_id ? nodeCode.get(a.wbs_node_id) : '—'}</td>
-              <td>
-                <span>{a.percent_complete ?? 0} % · {STATUS_LABEL[a.status as string] ?? a.status}</span>
-                {canReportProgress({ canEditSchedule: canEditData === true, userId: me, assigneeId: a.assignee_id }) && (
-                  <form action={reportProgress} className="row" style={{ flexWrap: 'nowrap' }}>
-                    <input type="hidden" name="project" value={id} /><input type="hidden" name="activity" value={a.id} />
-                    {a.duration === 0 ? (
-                      <select name="percent" defaultValue={String(a.percent_complete ?? 0)} aria-label={`Estado del hito ${a.name}`}>
-                        <option value="0">Pendiente</option><option value="100">Cumplido</option>
-                      </select>
-                    ) : (
-                      <input name="percent" type="number" min={0} max={100} step={1} defaultValue={a.percent_complete ?? 0} aria-label={`Avance de ${a.name} (%)`} style={{ width: '5rem' }} />
+        <table className="acts"><thead><tr><th>Actividad</th><th>Días</th><th>Inicio</th><th>Fin</th><th>Holgura</th><th>Plan.</th><th>Ejec.</th><th>Avance</th></tr></thead>
+          {groups.map((g) => { const t = summarize(g.items); return (
+            <tbody key={g.key}>
+              <tr className="grp"><th colSpan={5} scope="colgroup">{g.code ? `${g.code} · ` : ''}{g.name} <span className="hint">({g.items.length} actividad{g.items.length === 1 ? '' : 'es'}, {t.done} terminada{t.done === 1 ? '' : 's'})</span></th>
+                <th>{t.planned === null ? '—' : `${t.planned} %`}</th><th>{t.actual === null ? '—' : `${t.actual} %`}</th><th><span className={`badge ${t.dev.cls}`}>{t.dev.label}</span></th></tr>
+              {g.items.map((a) => (
+                <tr key={a.id} id={`act-${a.id}`} className={a.done ? 'done' : undefined}><td className={a.is_critical ? 'crit' : undefined}>{a.done && <span className="donemark">✓ </span>}{a.name}{a.done && <span className="sr-only"> (terminada)</span>}
+                  {canEditData === true && (
+                    <details className="actedit"><summary>Editar</summary>
+                      <form action={updateActivity}>
+                        <input type="hidden" name="project" value={id} /><input type="hidden" name="activity" value={a.id} />
+                        <label htmlFor={`en-${a.id}`}>Nombre</label><input id={`en-${a.id}`} name="name" defaultValue={a.name} required maxLength={200} />
+                        <label htmlFor={`ed-${a.id}`}>Duración (días hábiles)</label><input id={`ed-${a.id}`} name="duration" type="number" min={0} max={36500} step={1} defaultValue={a.duration} />
+                        <label htmlFor={`ew-${a.id}`}>Grupo de la WBS</label>
+                        <select id={`ew-${a.id}`} name="node" defaultValue={a.wbs_node_id ?? ''}><option value="">(ninguno)</option>
+                          {sortedNodes.map((n) => <option key={n.id} value={n.id}>{n.code} {n.name}</option>)}</select>
+                        <button className="secondary">Guardar cambios</button>
+                      </form>
+                    </details>
+                  )}</td><td>{a.duration}</td>
+                  <td>{formatDay(a.early_start)}</td><td>{formatDay(a.early_finish)}</td><td>{a.total_float ?? '—'}</td>
+                  <td>{a.planned === null ? '—' : `${a.planned} %`}</td><td>{a.actual} %</td>
+                  <td>
+                    <span>{a.percent_complete ?? 0} % · {STATUS_LABEL[a.status as string] ?? a.status}</span>
+                    {canReportProgress({ canEditSchedule: canEditData === true, userId: me, assigneeId: a.assignee_id }) && (
+                      <form action={reportProgress} className="row" style={{ flexWrap: 'nowrap' }}>
+                        <input type="hidden" name="project" value={id} /><input type="hidden" name="activity" value={a.id} />
+                        {a.duration === 0 ? (
+                          <select name="percent" defaultValue={String(a.percent_complete ?? 0)} aria-label={`Estado del hito ${a.name}`}>
+                            <option value="0">Pendiente</option><option value="100">Cumplido</option>
+                          </select>
+                        ) : (
+                          <input name="percent" type="number" min={0} max={100} step={1} defaultValue={a.percent_complete ?? 0} aria-label={`Avance de ${a.name} (%)`} style={{ width: '5rem' }} />
+                        )}
+                        <button className="secondary" style={{ marginTop: 0 }}>Guardar</button>
+                      </form>
                     )}
-                    <button className="secondary" style={{ marginTop: 0 }}>Guardar</button>
-                  </form>
-                )}
-              </td></tr>
-          ))}</tbody></table>
+                  </td></tr>
+              ))}
+            </tbody>); })}
+        </table>
         {(acts ?? []).length === 0 && <p>Sin actividades.</p>}
       </div>
       <div className="card">
@@ -291,7 +348,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         <label htmlFor="duration">Duración (días hábiles)</label><input id="duration" name="duration" type="number" min={0} max={36500} defaultValue={1} />
         <label htmlFor="node">Nodo de la WBS (opcional)</label>
         <select id="node" name="node" defaultValue=""><option value="">(ninguno)</option>
-          {[...(nodes ?? [])].sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })).map((n) => <option key={n.id} value={n.id}>{n.code} {n.name}</option>)}</select>
+          {sortedNodes.map((n) => <option key={n.id} value={n.id}>{n.code} {n.name}</option>)}</select>
         <button>Agregar</button>
       </form>
     </main>

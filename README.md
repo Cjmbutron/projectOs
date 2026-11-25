@@ -46,7 +46,7 @@ POS-001 v1.2 §2 declara como "hecho y probado" el esquema `db/` (128 pruebas de
 | Esquema de base de datos R1 + R2 (cronograma, líneas base), RLS, auditoría y pruebas de aislamiento | **Hecho y probado en PostgreSQL 16 con reemplazo de Supabase** (`db/`, R1 + R2 + R3 mínimo + RACI + notas, 1285 pruebas, 163/164 mutaciones detectadas) |
 | Servicio de recálculo (`schedule-service`): 11 pruebas unitarias + 8 de integración contra PostgreSQL real | **Hecho y probado** |
 | Prueba contra un proyecto Supabase real | **Pendiente** (necesita tus cuentas) |
-| Aplicación web | Construida hasta la entrega 38 (ver abajo); sin probar contra Supabase real |
+| Aplicación web | Construida hasta la entrega 39 (ver abajo); sin probar contra Supabase real |
 | Diseño UX/UI | Pendiente (requiere diseñador) |
 
 Las cifras de POS-001 que dependían de ese material (128 pruebas de RLS; 5 000 actividades en ~170 ms) deben
@@ -55,4 +55,4 @@ leerse como **metas**, no como resultados. La medición real del motor está en 
 ## Aplicación web (`apps/web`)
 Next.js 16 + Supabase. Pantallas: login/registro (bloqueo por cuenta), organización, proyectos, actividades con fechas calculadas y botón «Recalcular».
 Configuración: copiar `apps/web/.env.example` a `.env.local` con las claves de un proyecto Supabase tras aplicar `db/migrations/` en orden (`DATABASE_URL=… scripts/apply-migrations.sh`; ver `docs/guia-pruebas-manuales.md`).
-Estado honesto: compila, tipa y pasa 299 pruebas de la lógica de rutas, importación CSV, dependencias, WBS, requisitos, Gantt, charter, líneas base, salud, arrastre del Gantt, avance, «Mis actividades», recursos, carga semanal, ausencias, tablero, búsqueda global, calendario de feriados, matriz RACI y notas en las tarjetas; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**
+Estado honesto: compila, tipa y pasa 335 pruebas de la lógica de rutas, importación CSV, dependencias, WBS, requisitos, Gantt, charter, líneas base, salud, arrastre del Gantt, avance, «Mis actividades», recursos, carga semanal, ausencias, tablero, búsqueda global, calendario de feriados, matriz RACI, notas en las tarjetas, formato de fechas, agrupación y avance planificado; el arranque sin sesión se verificó por HTTP. **Las pantallas autenticadas aún no se han ejecutado contra un Supabase real.**

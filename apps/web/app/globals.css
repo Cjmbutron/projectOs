@@ -172,3 +172,15 @@ table.raci tbody th[scope=row]{text-transform:none;letter-spacing:0;font-size:.8
 .note-edit>summary{cursor:pointer;color:var(--link);font-size:.8125rem}
 .notes textarea{width:100%;min-height:72px;resize:vertical;font:inherit;font-size:.875rem}
 .note-new{margin-top:10px}
+
+/* Lista de actividades: grupos de la WBS y tareas terminadas */
+table.acts tr.grp th{background:var(--field);text-align:left;border-top:1px solid var(--line)}
+table.acts tr.done td{color:var(--ok, #4ade80);background:rgba(74,222,128,.07)}
+table.acts tr.done td.crit{color:var(--ok, #4ade80)}
+.donemark{font-weight:700}
+.card.done,.card.is-done{border-left:3px solid var(--ok, #4ade80)}
+.board-card.is-done{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.08)}
+.board-card.is-done strong{color:var(--ok)}
+details.actedit{margin-top:6px;font-weight:400}
+details.actedit summary{cursor:pointer;color:var(--link);font-size:.85rem}
+details.actedit form{padding:8px 0;max-width:22rem}

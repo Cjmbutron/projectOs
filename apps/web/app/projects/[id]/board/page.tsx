@@ -1,11 +1,11 @@
 import Link from 'next/link';
+import { formatDay } from '@/lib/dates';
 import { notFound } from 'next/navigation';
 import { KanbanBoard, type Card } from '@/components/KanbanBoard';
 import { allowedMoves, COLUMNS, isStatus, type BoardActivity } from '@/lib/board';
 import { messageFor } from '@/lib/errors';
 import { UUID_RE } from '@/lib/http';
 import { deadlineState } from '@/lib/my-activities';
-import { shortDate } from '@/lib/load';
 import { canReportProgress } from '@/lib/progress';
 import { createClient } from '@/lib/supabase/server';
 import { moveCard } from './actions';
@@ -46,7 +46,7 @@ export default async function BoardPage({ params, searchParams }: { params: Prom
     const canMove = writable && canReportProgress({ canEditSchedule: canEditData === true, userId: me, assigneeId: a.assignee_id });
     return {
       id: a.id, name: a.name, percent: a.percent_complete ?? 0, status, duration: a.duration,
-      dates: a.early_start && a.early_finish ? `${shortDate(a.early_start)} – ${shortDate(a.early_finish)}` : 'Sin fechas',
+      dates: a.early_start && a.early_finish ? `${formatDay(a.early_start)} → ${formatDay(a.early_finish)}` : 'Sin fechas',
       assignee: a.assignee_id ? (names.get(a.assignee_id) ?? null) : null,
       badge: d === 'overdue' ? { text: 'Vencida', cls: 'badge-danger' } : d === 'due_soon' ? { text: 'Vence pronto', cls: 'badge-warn' } : null,
       moves: allowedMoves(a).map((to) => ({ to, label: LABEL[to] })), canMove,
